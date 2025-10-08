@@ -1,0 +1,4 @@
+DerivePointerAlignment: false
+PointerAlignment: Left
+AlignArrayOfStructures: Right
+ColumnLimit: 150
