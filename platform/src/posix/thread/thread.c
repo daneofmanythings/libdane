@@ -1,5 +1,6 @@
 #include "../../../include/libdane/platform/thread.h"
 
+#include <libdane/platform/thread.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,25 +9,36 @@
 static pthread_key_t err_key;
 static pthread_once_t err_once = PTHREAD_ONCE_INIT;
 
+// clang-format off
 static void _thread_local_storage_free(void* data);
 static void _thread_local_storage_init(void);
 static int _thread_local_storage_init_once(void);
+// clang-format on
 
 struct libd_platform_thread_local_storage_handle_s {
   //
 };
 
 // No-op for this platfrom
-libd_platform_thread_result_e libd_platform_thread_local_storage_handle_create(libd_platform_thread_local_storage_handle_s** pp_handle) {
+libd_platform_thread_result_e
+libd_platform_thread_local_storage_handle_create(
+  libd_platform_thread_local_storage_handle_s** pp_handle)
+{
   return RESULT_OK;
 }
 
 // No-op for this platform
-void libd_platform_thread_local_storage_handle_destroy(libd_platform_thread_local_storage_handle_s* handle) {
+libd_platform_thread_result_e
+libd_platform_thread_local_storage_handle_destroy(
+  libd_platform_thread_local_storage_handle_s* handle)
+{
   //
 }
 
-libd_platform_thread_result_e libd_platform_thread_local_storage_create_once(libd_platform_thread_local_storage_handle_s** pp_handle) {
+libd_platform_thread_result_e
+libd_platform_thread_local_storage_create_once(
+  libd_platform_thread_local_storage_handle_s** pp_handle)
+{
   int err = _thread_local_storage_init_once();
   if (err != 0) {
     return err;
@@ -34,15 +46,23 @@ libd_platform_thread_result_e libd_platform_thread_local_storage_create_once(lib
   return RESULT_OK;
 }
 
-void libd_platform_thread_local_storage_destroy(libd_platform_thread_local_storage_handle_s* p_handle) {
+libd_platform_thread_result_e
+libd_platform_thread_local_storage_destroy(
+  libd_platform_thread_local_storage_handle_s* p_handle)
+{
   //
 }
 
-libd_platform_thread_result_e libd_platform_thread_local_storage_set(libd_platform_thread_local_storage_handle_s* p_handle,
-                                                                     libd_platform_thread_local_storage_data_setter_f setter_f, void* new_data,
-                                                                     size_t size) {
+libd_platform_thread_result_e
+libd_platform_thread_local_storage_set(
+  libd_platform_thread_local_storage_handle_s* p_handle,
+  libd_platform_thread_local_storage_data_setter_f setter_f,
+  void* new_data,
+  size_t size)
+{
   void* thread_local_data;
-  int err = libd_platform_thread_local_storage_get(p_handle, &thread_local_data, size);
+  int err =
+    libd_platform_thread_local_storage_get(p_handle, &thread_local_data, size);
   if (err != 0) {
     return err;
   }
@@ -56,12 +76,18 @@ libd_platform_thread_result_e libd_platform_thread_local_storage_set(libd_platfo
   return 0;
 }
 
-libd_platform_thread_result_e libd_platform_thread_local_storage_get(libd_platform_thread_local_storage_handle_s* p_handle, void** pp_data,
-                                                                     size_t data_size) {
-  libd_platform_thread_result_e result = libd_platform_thread_local_storage_create_once(NULL);
+libd_platform_thread_result_e
+libd_platform_thread_local_storage_get(
+  libd_platform_thread_local_storage_handle_s* p_handle,
+  void** pp_data,
+  size_t data_size)
+{
+  libd_platform_thread_result_e result =
+    libd_platform_thread_local_storage_create_once(NULL);
   if (result != RESULT_OK) {
     return result;
   }
+
   void* p_data = pthread_getspecific(err_key);
 
   if (p_data == NULL) {
@@ -78,21 +104,23 @@ libd_platform_thread_result_e libd_platform_thread_local_storage_get(libd_platfo
   return 0;
 }
 
-static int _thread_local_storage_init_once(void) {
-  // TODO: somehow get the execution of _thread_local_storage_init to pass on a possible error.
+static int
+_thread_local_storage_init_once(void)
+{
   return pthread_once(&err_once, _thread_local_storage_init);
 }
 
-static void _thread_local_storage_init(void) {
+static void
+_thread_local_storage_init(void)
+{
   if (pthread_key_create(&err_key, _thread_local_storage_free) != 0) {
-
-    // NOTE: I dont like this error handling :(
     fprintf(stderr, "ERROR: could not create thread local storage key\n");
     exit(1);
-    // ----
   }
 }
-static void _thread_local_storage_free(void* data) {
+static void
+_thread_local_storage_free(void* data)
+{
   if (data != NULL) {
     free(data);
   }

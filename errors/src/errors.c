@@ -6,13 +6,16 @@ struct dlib_error_err_s {
   char msg[512];
 };
 
-libd_errors_result_e libd_error_err_get(dlib_error_err_s** pp_err) {
+libd_errors_result_e
+libd_error_err_get(dlib_error_err_s** pp_err)
+{
   int result = platform_thread_local_storage_create_once();
   if (result != 0) {
     // TODO:
   }
 
-  result = platform_thread_local_storage_get((void**)pp_err, sizeof(dlib_error_err_s));
+  result =
+    platform_thread_local_storage_get((void**)pp_err, sizeof(dlib_error_err_s));
   if (result != RESULT_OK) {
     // TODO:
   }
@@ -20,7 +23,9 @@ libd_errors_result_e libd_error_err_get(dlib_error_err_s** pp_err) {
   return RESULT_OK;
 }
 
-libd_errors_result_e libd_errors_err_set(int code, const char* fmt, ...) {
+libd_errors_result_e
+libd_errors_err_set(int code, const char* fmt, ...)
+{
   int err = platform_thread_local_storage_create_once();
   if (err != 0) {
     return err;

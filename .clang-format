@@ -1,4 +1,20 @@
 DerivePointerAlignment: false
 PointerAlignment: Left
 AlignArrayOfStructures: Right
-ColumnLimit: 150
+ColumnLimit: 80
+
+IndentWidth: 2
+UseTab: Never
+
+AlwaysBreakAfterReturnType: All
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackParameters: false
+AlignAfterOpenBracket: Align
+ContinuationIndentWidth: 2
+
+BreakBeforeBraces: Custom 
+BraceWrapping:
+  AfterFunction: true
+MaxEmptyLinesToKeep: 2
+SpacesBeforeTrailingComments: 2
+

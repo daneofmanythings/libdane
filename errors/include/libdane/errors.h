@@ -8,7 +8,9 @@ typedef enum {
 
 typedef struct dlib_error_err_s dlib_error_err_s;
 
-libd_errors_result_e libd_error_err_get(dlib_error_err_s** pp_err);
-libd_errors_result_e libd_errors_err_set(int code, const char* fmt, ...);
+libd_errors_result_e
+libd_error_err_get(dlib_error_err_s** pp_err);
+libd_errors_result_e
+libd_errors_err_set(int code, const char* fmt, ...);
 
-#endif // LIBDANE_ERRORS_H
+#endif  // LIBDANE_ERRORS_H
