@@ -12,7 +12,7 @@
 //==============================================================================
 
 /**
- * @brief Result codes for thread operations
+ * @brief Result codes
  */
 #include <stddef.h>
 typedef enum {
@@ -37,14 +37,6 @@ typedef struct {
 //==============================================================================
 // Error handling API
 //==============================================================================
-
-/**
- * @brief Initializes the threaded error storage. Call once at the start of the
- * program.
- * @return RESULT_OK on success, error code otherwise
- */
-libd_errors_result_e
-libd_error_err_init(void);
 
 /**
  * @brief Gets the error context and places it in pp_err.

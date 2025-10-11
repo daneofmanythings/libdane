@@ -28,7 +28,7 @@ system_posix = [
 
 libs = [
   'platform',
-  # 'errors',
+  'errors',
   # 'memory',
 ]
 

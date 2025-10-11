@@ -4,18 +4,22 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define RBUF_INDICES(a) (uint32_t*)(a)->dat
-#define ARENA_DATA(a) (a)->dat + (a)->rbuf_capacity * sizeof(uint32_t)
+#define RBUF_INDICES(a) ((uint32_t*)(a)->dat)
+#define ARENA_DATA(a) ((a)->dat + (a)->rbuf_capacity * sizeof(uint32_t))
 
 struct libd_memory_pool_arena_s {
   size_t capacity, size;
-  size_t rbuf_capacity, rbuf_head, rbuf_tail;
+  size_t rbuf_capacity, rbuf_next_alloc_idx, rbuf_return_freed_idx;
   uint8_t dat[];
 };
 typedef struct libd_memory_pool_arena_s pool_arena_s;
 
 static void
 _embedded_index_ring_buffer_init(pool_arena_s* rbuf, size_t capacity);
+libd_memory_result_e
+_embedded_ring_buffer_get_next_index(pool_arena_s* p_arena, size_t* next_idx);
+libd_memory_result_e
+_embedded_ring_buffer_set_free_idx(pool_arena_s* p_arena, size_t freed_index);
 
 libd_memory_result_e
 libd_memory_pool_arena_create(pool_arena_s** pp_arena,
@@ -34,7 +38,6 @@ libd_memory_pool_arena_create(pool_arena_s** pp_arena,
   pool_arena_s* p_arena = (pool_arena_s*)malloc(alloc_size);
 
   if (p_arena == NULL) {
-    // TODO: integrate errors to handle this case
     return ERR_NO_MEMORY;
   }
 
@@ -52,24 +55,36 @@ libd_memory_pool_arena_create(pool_arena_s** pp_arena,
 libd_memory_result_e
 libd_memory_pool_arena_alloc(pool_arena_s* p_arena, uint8_t** pp_data)
 {
-  // TODO: get the next open index
+  size_t next_index = 0;
+  if (_embedded_ring_buffer_get_next_index(p_arena, &next_index) != RESULT_OK) {
+    return ERR_NO_MEMORY;
+  }
+  size_t byte_offset = next_index * p_arena->size;
 
-  // TODO: get the pointer to the spot in the data array
+  *pp_data = ARENA_DATA(p_arena) + byte_offset;
 
-  // TODO: set the out pointer
-
-  return ERR_NOT_IMPLEMENTED;
+  return RESULT_OK;
 }
 
 libd_memory_result_e
 libd_memory_pool_arena_free(pool_arena_s* p_arena, uint8_t* p_data)
 {
-  uint8_t index = (p_data - p_arena->dat) / p_arena->size;
-  // TODO: check that the index is in-bounds
+  ptrdiff_t byte_offset = p_data - ARENA_DATA(p_arena);
+  if (byte_offset < 0 || byte_offset % p_arena->size != 0) {
+    return ERR_INVALID_POINTER;  // below bounds or not aligned
+  }
 
-  // TODO: place the index at the free_tail and increment it
+  size_t freed_index = byte_offset / p_arena->size;
+  if (freed_index >= p_arena->capacity) {
+    return ERR_INVALID_POINTER;  // above bounds
+  }
 
-  return ERR_NOT_IMPLEMENTED;
+  if (_embedded_ring_buffer_set_free_idx(p_arena, freed_index) != RESULT_OK) {
+    // TODO:
+    return ERR_NOT_IMPLEMENTED;
+  }
+
+  return RESULT_OK;
 }
 
 libd_memory_result_e
@@ -96,12 +111,23 @@ static void
 _embedded_index_ring_buffer_init(pool_arena_s* p_arena, size_t rbuf_capacity)
 {
   p_arena->rbuf_capacity = rbuf_capacity;
-  p_arena->rbuf_tail = 0;
-  p_arena->rbuf_head = 0;
+  p_arena->rbuf_return_freed_idx = 0;
+  p_arena->rbuf_next_alloc_idx = 0;
 
   uint32_t* indices = RBUF_INDICES(p_arena);
 
   for (size_t i = 0; i < rbuf_capacity; i++) {
     indices[i] = i;
   }
+}
+
+libd_memory_result_e
+_embedded_ring_buffer_get_next_index(pool_arena_s* p_arena, size_t* next_idx)
+{
+  return ERR_NOT_IMPLEMENTED;
+}
+libd_memory_result_e
+_embedded_ring_buffer_set_free_idx(pool_arena_s* p_arena, size_t freed_index)
+{
+  return ERR_NOT_IMPLEMENTED;
 }

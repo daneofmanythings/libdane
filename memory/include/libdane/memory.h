@@ -17,10 +17,11 @@
  * @brief Result codes for memory operations
  */
 typedef enum {
-  RESULT_OK,                  /**< Operation successful */
-  ERR_NO_MEMORY,              /**< No memory for the operation */
-  ERR_NOT_IMPLEMENTED,        /**< Functionality not yet implemented */
-  ERR_NULL_RECEIVED,          /**< Received a NULL pointer as a parameter */
+  RESULT_OK,           /**< Operation successful */
+  ERR_NO_MEMORY,       /**< No memory for the operation */
+  ERR_NOT_IMPLEMENTED, /**< Functionality not yet implemented */
+  ERR_NULL_RECEIVED,   /**< Received a NULL pointer as a parameter */
+  ERR_INVALID_POINTER, /**< An invalid pointer was passed as a parameter */
   LIBD_MEMORY_RESULT_E_COUNT, /**< Count of result states */
 } libd_memory_result_e;
 
