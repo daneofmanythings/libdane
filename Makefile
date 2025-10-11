@@ -11,4 +11,10 @@ build: setup
 install: build
 	@ echo === INSTALL BEGIN ===
 	@ meson install -C builddir
+	@ sudo ldconfig
 	@ echo === INSTALL END ===
+
+test: build
+	@ echo === TEST BEGIN ===
+	@ meson test -C builddir
+	@ echo === TEST END ===

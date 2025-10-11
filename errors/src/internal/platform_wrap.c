@@ -1,46 +1,23 @@
 #include "internal.h"
+
 #include <libdane/platform/thread.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 int
-platform_thread_local_storage_create_once(void)
+platform_thread_local_static_init(size_t size)
 {
-
-  libd_platform_thread_result_e result =
-    libd_platform_thread_local_storage_create_once(NULL);
-  if (result != RESULT_OK) {
-    return result;
-  }
-
-  return RESULT_OK;
+  return libd_platform_thread_local_static_init(NULL, size);
 }
 
 int
-platform_thread_local_storage_get(void** pp_data, size_t size)
+platform_thread_local_static_get(void** pp_data, size_t size)
 {
-  libd_platform_thread_result_e result =
-    libd_platform_thread_local_storage_get(NULL, pp_data, size);
-  if (result != RESULT_OK) {
-    return result;
-  }
-  return RESULT_OK;
+  return libd_platform_thread_local_static_get(pp_data);
 }
 
 int
-platform_thread_local_storage_set(void* p_new_data, size_t size)
+platform_thread_local_static_set(void* p_new_data, size_t size)
 {
-  void* p_data;
-  libd_platform_thread_result_e result;
-
-  result = platform_thread_local_storage_get(&p_data, size);
-  if (result != RESULT_OK) {
-    return result;
-  }
-
-  result = libd_platform_thread_local_storage_set(NULL, NULL, p_new_data, size);
-  if (result != RESULT_OK) {
-    return result;
-  }
-
-  return RESULT_OK;
+  return libd_platform_thread_local_static_set(NULL, p_new_data);
 }

@@ -8,7 +8,7 @@ platform_sources = files(
 
 if host_system in system_posix
   platform_sources += files(
-    'src/posix/thread/thread.c',
+    'src/posix/thread/thread_local_storage.c',
   )
 else
   error('Unsupported platform: ' + host_system)
@@ -46,7 +46,7 @@ libd_platform_dep = declare_dependency(
 
 if build_tests
   test_sources = files(
-    'tests/thread_test.c',
+    'tests/thread_local_storage_test.c',
   )
 
   platform_test = executable('test_platform',
@@ -56,6 +56,8 @@ if build_tests
       criterion_dep,
     ],
   )
+
+  args = ['--verbose']
   
-  test('platform tests', platform_test)
+  test('platform tests', platform_test, args: args)
 endif

@@ -1,15 +1,67 @@
+/**
+ * @file errors.h
+ * @brief Error handling with string context.
+ */
+
 #ifndef LIBDANE_ERRORS_H
 #define LIBDANE_ERRORS_H
 
+
+//==============================================================================
+// Result Codes
+//==============================================================================
+
+/**
+ * @brief Result codes for thread operations
+ */
+#include <stddef.h>
 typedef enum {
   RESULT_OK,
   LIBD_ERRORS_RESULT_E_COUNT,
 } libd_errors_result_e;
 
-typedef struct dlib_error_err_s dlib_error_err_s;
 
+//==============================================================================
+// Type Definitions
+//==============================================================================
+
+/**
+ * @brief Struct to hold the error context.
+ */
+typedef struct {
+  int code;      /**< User defined error code */
+  char msg[512]; /**< Human readable error context */
+} libd_errors_err_s;
+
+
+//==============================================================================
+// Error handling API
+//==============================================================================
+
+/**
+ * @brief Initializes the threaded error storage. Call once at the start of the
+ * program.
+ * @return RESULT_OK on success, error code otherwise
+ */
 libd_errors_result_e
-libd_error_err_get(dlib_error_err_s** pp_err);
+libd_error_err_init(void);
+
+/**
+ * @brief Gets the error context and places it in pp_err.
+ * @param pp_err Pointer to the error handle.
+ * @return RESULT_OK on success, error code otherwise
+ */
+libd_errors_result_e
+libd_error_err_get(libd_errors_err_s** pp_err);
+
+
+/**
+ * @brief Sets the error code and string context.
+ * @param code The user defined error code.
+ * @param fmt The string template to use.
+ * @param ... The variadic arguements to put into the string template.
+ * @return RESULT_OK on success, error code otherwise
+ */
 libd_errors_result_e
 libd_errors_err_set(int code, const char* fmt, ...);
 

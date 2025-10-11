@@ -4,10 +4,10 @@
 #include <stddef.h>
 
 int
-platform_thread_local_storage_create_once(void);
+platform_thread_local_static_init(size_t size);
 int
-platform_thread_local_storage_get(void** pp_data, size_t size);
+platform_thread_local_static_get(void** pp_data, size_t size);
 int
-platform_thread_local_storage_set(void* p_new_data, size_t size);
+platform_thread_local_static_set(void* p_new_data, size_t size);
 
 #endif  // !LIBD_ERRORS_INTERNAL_H
