@@ -17,11 +17,14 @@
  * @brief Result codes for memory operations
  */
 typedef enum {
-  RESULT_OK,           /**< Operation successful */
-  ERR_NO_MEMORY,       /**< No memory for the operation */
-  ERR_NOT_IMPLEMENTED, /**< Functionality not yet implemented */
-  ERR_NULL_RECEIVED,   /**< Received a NULL pointer as a parameter */
-  ERR_INVALID_POINTER, /**< An invalid pointer was passed as a parameter */
+  RESULT_OK,             /**< Operation successful */
+  ERR_NO_MEMORY,         /**< No memory for the operation */
+  ERR_NOT_IMPLEMENTED,   /**< Functionality not yet implemented */
+  ERR_NULL_RECEIVED,     /**< A NULL pointer parameter was detected */
+  ERR_INVALID_POINTER,   /**< An invalid pointer parameter was detected */
+  ERR_ZEROED_SIZE_PARAM, /**< A zero size/capacity parameter was detected */
+  ERR_INVALID_FREE,      /**< Tried to free memory from an arena that has no
+                            allocations */
   LIBD_MEMORY_RESULT_E_COUNT, /**< Count of result states */
 } libd_memory_result_e;
 
@@ -50,7 +53,7 @@ typedef struct libd_memory_pool_arena_s libd_memory_pool_arena_s;
  */
 libd_memory_result_e
 libd_memory_bump_arena_create(libd_memory_bump_arena_s** pp_arena,
-                              size_t capacity);
+                              size_t capacity_bytes);
 
 /**
  * @brief Sets a given pointer to start of a data block of the provided size.
@@ -87,6 +90,8 @@ libd_memory_bump_arena_destroy(libd_memory_bump_arena_s* p_arena);
 
 /**
  * @brief Initializes an arena with a capacity for objects of a given size
+ * @warning Using a freelist capacity of 0 is treated as an error. Use a bump
+ * arena instead.
  * @param pp_arena Pointer to recieve the created handle
  * @param capacity Max number of elements the pool should hold
  * @param size Size of the type to be held

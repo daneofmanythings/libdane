@@ -1,49 +1,59 @@
-memory_src = files(
-  'src/bump_arena.c',
-  'src/monotyped_arena.c',
+memory_includes = include_directories('include')
 
-  'src/internal/ring_buffer.c',
+# tracking headers for rebuilding
+memory_sources = files(
+  'include/libdane/memory.h',
 )
 
-# Include directory for this library
-memory_inc = include_directories('include')
+# TODO: verify platform specifics
+if host_system in system_posix
+  memory_sources += files(
+    'src/bump_arena.c',
+    'src/pool_arena.c',
+  )
+else
+  error('Unsupported platform: ' + host_system)
+endif
 
-# Build the library (both shared and static)
-libmemory = library('libd-memory',
-  memory_src,
-  include_directories: [inc, memory_inc],
+libd_memory= library('libd-memory',
+  memory_sources,
+  include_directories: [
+    memory_includes,
+  ],
   install: true,
   version: meson.project_version(),
   soversion: '0'
 )
 
-# Install headers
+# main header
 install_headers(
   'include/libdane/memory.h',
   subdir: 'libdane'
 )
 
 # Create a dependency object for other libraries to use
-libmemory_dep = declare_dependency(
-  link_with: libmemory,
-  include_directories: [inc, memory_inc]
+libd_memory_dep = declare_dependency(
+  link_with: libd_memory,
+  include_directories: [
+    memory_includes,
+  ]
 )
 
-# Generate pkg-config file
-pkg.generate(libmemory,
-  name: 'libd-memory',
-  description: 'Memory management library for libdane',
-  subdirs: 'libdane'
-)
+if build_tests
+  test_sources = files(
+    'tests/bump_arena_test.c',
+    'tests/pool_arena_test.c',
+  )
 
-# Tests
-# if get_option('enable_tests')
-#   test_exe = executable('test_memory',
-#     'tests/test_allocator.c',
-#     'tests/test_arena.c',
-#     include_directories: [inc, memory_inc],
-#     link_with: libmemory
-#   )
-#   
-#   test('memory tests', test_exe)
-# endif
+  memory_test = executable('test_memory',
+    test_sources,
+    dependencies: [
+      libd_memory_dep,
+      criterion_dep,
+    ],
+  )
+
+  args = ['--verbose']
+  
+  test('memory tests', memory_test, args: args)
+endif

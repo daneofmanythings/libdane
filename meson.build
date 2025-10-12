@@ -29,7 +29,7 @@ system_posix = [
 libs = [
   'platform',
   'errors',
-  # 'memory',
+  'memory',
 ]
 
 foreach lib: libs

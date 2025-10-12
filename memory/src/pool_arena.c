@@ -1,15 +1,19 @@
 #include "../include/libdane/memory.h"
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
 
-#define RBUF_INDICES(a) ((uint32_t*)(a)->dat)
+#define RBUF_DATA(a) ((uint32_t*)(a)->dat)
 #define ARENA_DATA(a) ((a)->dat + (a)->rbuf_capacity * sizeof(uint32_t))
 
+/*
+ * The embedded ring buffer is handling the free list.
+ */
 struct libd_memory_pool_arena_s {
   size_t capacity, size;
-  size_t rbuf_capacity, rbuf_next_alloc_idx, rbuf_return_freed_idx;
+  size_t rbuf_capacity, rbuf_read_idx, rbuf_write_idx, rbuf_count;
   uint8_t dat[];
 };
 typedef struct libd_memory_pool_arena_s pool_arena_s;
@@ -29,6 +33,9 @@ libd_memory_pool_arena_create(pool_arena_s** pp_arena,
 {
   if (pp_arena == NULL) {
     return ERR_NULL_RECEIVED;
+  }
+  if (capacity == 0 || datum_size == 0 || freelist_capacity == 0) {
+    return ERR_ZEROED_SIZE_PARAM;
   }
 
   size_t free_list_size = freelist_capacity * sizeof(uint32_t);
@@ -90,9 +97,9 @@ libd_memory_pool_arena_free(pool_arena_s* p_arena, uint8_t* p_data)
 libd_memory_result_e
 libd_memory_pool_arena_reset(pool_arena_s* p_arena)
 {
-  // TODO: reset the free_list
+  _embedded_index_ring_buffer_init(p_arena, p_arena->rbuf_capacity);
 
-  return ERR_NOT_IMPLEMENTED;
+  return RESULT_OK;
 }
 
 libd_memory_result_e
@@ -107,27 +114,63 @@ libd_memory_pool_arena_destroy(pool_arena_s* p_arena)
   return RESULT_OK;
 }
 
+static bool
+_embedded_rbuf_is_full(pool_arena_s* p_arena);
+static bool
+_embedded_rbuf_is_empty(pool_arena_s* p_arena);
+
+/*
+ * Currently implemented with a counting based state tracking implementation. It
+ * is simple, not as performant as it could be. If performance is an issue, look
+ * for the floating slot implementation.
+ */
 static void
 _embedded_index_ring_buffer_init(pool_arena_s* p_arena, size_t rbuf_capacity)
 {
   p_arena->rbuf_capacity = rbuf_capacity;
-  p_arena->rbuf_return_freed_idx = 0;
-  p_arena->rbuf_next_alloc_idx = 0;
+  p_arena->rbuf_write_idx = 0;
+  p_arena->rbuf_read_idx = 0;
+  p_arena->rbuf_count = rbuf_capacity;
 
-  uint32_t* indices = RBUF_INDICES(p_arena);
+  uint32_t* index_data = RBUF_DATA(p_arena);
 
   for (size_t i = 0; i < rbuf_capacity; i++) {
-    indices[i] = i;
+    index_data[i] = i;
   }
 }
 
 libd_memory_result_e
 _embedded_ring_buffer_get_next_index(pool_arena_s* p_arena, size_t* next_idx)
 {
-  return ERR_NOT_IMPLEMENTED;
+  if (_embedded_rbuf_is_empty(p_arena)) {
+    return ERR_NO_MEMORY;  // Freelist is empty so the arena is full.
+  }
+  *next_idx = RBUF_DATA(p_arena)[p_arena->rbuf_read_idx];
+  p_arena->rbuf_read_idx =
+    (p_arena->rbuf_read_idx + 1) % p_arena->rbuf_capacity;
+  p_arena->rbuf_count -= 1;
+  return RESULT_OK;
 }
 libd_memory_result_e
 _embedded_ring_buffer_set_free_idx(pool_arena_s* p_arena, size_t freed_index)
 {
-  return ERR_NOT_IMPLEMENTED;
+  if (_embedded_rbuf_is_full(p_arena)) {
+    return ERR_INVALID_FREE;  // Freelist is full, so the arena is empty.
+  }
+  RBUF_DATA(p_arena)[p_arena->rbuf_write_idx] = freed_index;
+  p_arena->rbuf_write_idx =
+    (p_arena->rbuf_write_idx + 1) % p_arena->rbuf_capacity;
+  p_arena->rbuf_count += 1;
+  return RESULT_OK;
+}
+
+static bool
+_embedded_rbuf_is_full(pool_arena_s* p_arena)
+{
+  return p_arena->rbuf_count == p_arena->rbuf_capacity;
+}
+static bool
+_embedded_rbuf_is_empty(pool_arena_s* p_arena)
+{
+  return p_arena->rbuf_count == 0;
 }

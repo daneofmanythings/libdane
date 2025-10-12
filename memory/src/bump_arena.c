@@ -10,21 +10,26 @@ struct libd_memory_bump_arena_s {
 typedef libd_memory_bump_arena_s bump_arena_s;
 
 libd_memory_result_e
-libd_memory_bump_arena_create(bump_arena_s** pp_arena, size_t capacity)
+libd_memory_bump_arena_create(bump_arena_s** pp_arena, size_t capacity_bytes)
 {
   if (pp_arena == NULL) {
     return ERR_NULL_RECEIVED;
   }
+  if (capacity_bytes == 0) {
+    return ERR_ZEROED_SIZE_PARAM;
+  }
 
-  size_t alloc_size = sizeof(bump_arena_s) + capacity + sizeof(uint8_t);
+  size_t alloc_size = sizeof(bump_arena_s) + capacity_bytes * sizeof(uint8_t);
   bump_arena_s* p_arena = (bump_arena_s*)malloc(alloc_size);
   if (p_arena == NULL) {
     // TODO: this is a fatal error
     return ERR_NO_MEMORY;
   }
 
-  p_arena->capacity = capacity;
+  p_arena->capacity = capacity_bytes;
   p_arena->cursor_index = 0;
+
+  *pp_arena = p_arena;
 
   return RESULT_OK;
 }
