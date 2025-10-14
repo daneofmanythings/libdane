@@ -19,11 +19,11 @@ struct libd_memory_pool_arena_s {
 typedef struct libd_memory_pool_arena_s pool_arena_s;
 
 static void
-_embedded_index_ring_buffer_init(pool_arena_s* rbuf, size_t capacity);
+_embedded_ring_buffer_init(pool_arena_s* rbuf, size_t capacity);
 libd_memory_result_e
-_embedded_ring_buffer_get_next_index(pool_arena_s* p_arena, size_t* next_idx);
+_embedded_ring_buffer_read_index(pool_arena_s* p_arena, size_t* next_idx);
 libd_memory_result_e
-_embedded_ring_buffer_set_free_idx(pool_arena_s* p_arena, size_t freed_index);
+_embedded_ring_buffer_write_index(pool_arena_s* p_arena, size_t freed_index);
 
 libd_memory_result_e
 libd_memory_pool_arena_create(pool_arena_s** pp_arena,
@@ -32,17 +32,17 @@ libd_memory_pool_arena_create(pool_arena_s** pp_arena,
                               size_t freelist_capacity)
 {
   if (pp_arena == NULL) {
-    return ERR_NULL_RECEIVED;
+    return ERR_INVALID_NULL_PARAMETER;
   }
   if (capacity == 0 || datum_size == 0 || freelist_capacity == 0) {
-    return ERR_ZEROED_SIZE_PARAM;
+    return ERR_INVALID_ZERO_PARAMETER;
   }
 
   size_t free_list_size = freelist_capacity * sizeof(uint32_t);
   size_t data_array_size = capacity * datum_size;
   size_t alloc_size = sizeof(pool_arena_s) + free_list_size + data_array_size;
 
-  pool_arena_s* p_arena = (pool_arena_s*)malloc(alloc_size);
+  pool_arena_s* p_arena = malloc(alloc_size);
 
   if (p_arena == NULL) {
     return ERR_NO_MEMORY;
@@ -52,7 +52,7 @@ libd_memory_pool_arena_create(pool_arena_s** pp_arena,
   p_arena->size = datum_size;
 
 
-  _embedded_index_ring_buffer_init(p_arena, freelist_capacity);
+  _embedded_ring_buffer_init(p_arena, freelist_capacity);
 
   *pp_arena = p_arena;
 
@@ -63,7 +63,7 @@ libd_memory_result_e
 libd_memory_pool_arena_alloc(pool_arena_s* p_arena, uint8_t** pp_data)
 {
   size_t next_index = 0;
-  if (_embedded_ring_buffer_get_next_index(p_arena, &next_index) != RESULT_OK) {
+  if (_embedded_ring_buffer_read_index(p_arena, &next_index) != RESULT_OK) {
     return ERR_NO_MEMORY;
   }
   size_t byte_offset = next_index * p_arena->size;
@@ -86,7 +86,7 @@ libd_memory_pool_arena_free(pool_arena_s* p_arena, uint8_t* p_data)
     return ERR_INVALID_POINTER;  // above bounds
   }
 
-  if (_embedded_ring_buffer_set_free_idx(p_arena, freed_index) != RESULT_OK) {
+  if (_embedded_ring_buffer_write_index(p_arena, freed_index) != RESULT_OK) {
     // TODO:
     return ERR_NOT_IMPLEMENTED;
   }
@@ -97,7 +97,7 @@ libd_memory_pool_arena_free(pool_arena_s* p_arena, uint8_t* p_data)
 libd_memory_result_e
 libd_memory_pool_arena_reset(pool_arena_s* p_arena)
 {
-  _embedded_index_ring_buffer_init(p_arena, p_arena->rbuf_capacity);
+  _embedded_ring_buffer_init(p_arena, p_arena->rbuf_capacity);
 
   return RESULT_OK;
 }
@@ -106,7 +106,7 @@ libd_memory_result_e
 libd_memory_pool_arena_destroy(pool_arena_s* p_arena)
 {
   if (p_arena == NULL) {
-    return ERR_NULL_RECEIVED;
+    return ERR_INVALID_NULL_PARAMETER;
   }
 
   free(p_arena);
@@ -125,7 +125,7 @@ _embedded_rbuf_is_empty(pool_arena_s* p_arena);
  * for the floating slot implementation.
  */
 static void
-_embedded_index_ring_buffer_init(pool_arena_s* p_arena, size_t rbuf_capacity)
+_embedded_ring_buffer_init(pool_arena_s* p_arena, size_t rbuf_capacity)
 {
   p_arena->rbuf_capacity = rbuf_capacity;
   p_arena->rbuf_write_idx = 0;
@@ -140,27 +140,34 @@ _embedded_index_ring_buffer_init(pool_arena_s* p_arena, size_t rbuf_capacity)
 }
 
 libd_memory_result_e
-_embedded_ring_buffer_get_next_index(pool_arena_s* p_arena, size_t* next_idx)
+_embedded_ring_buffer_read_index(pool_arena_s* p_arena, size_t* next_idx)
 {
   if (_embedded_rbuf_is_empty(p_arena)) {
     return ERR_NO_MEMORY;  // Freelist is empty so the arena is full.
   }
+
   *next_idx = RBUF_DATA(p_arena)[p_arena->rbuf_read_idx];
+
   p_arena->rbuf_read_idx =
     (p_arena->rbuf_read_idx + 1) % p_arena->rbuf_capacity;
   p_arena->rbuf_count -= 1;
+
   return RESULT_OK;
 }
+
 libd_memory_result_e
-_embedded_ring_buffer_set_free_idx(pool_arena_s* p_arena, size_t freed_index)
+_embedded_ring_buffer_write_index(pool_arena_s* p_arena, size_t freed_index)
 {
   if (_embedded_rbuf_is_full(p_arena)) {
     return ERR_INVALID_FREE;  // Freelist is full, so the arena is empty.
   }
+
   RBUF_DATA(p_arena)[p_arena->rbuf_write_idx] = freed_index;
+
   p_arena->rbuf_write_idx =
     (p_arena->rbuf_write_idx + 1) % p_arena->rbuf_capacity;
   p_arena->rbuf_count += 1;
+
   return RESULT_OK;
 }
 

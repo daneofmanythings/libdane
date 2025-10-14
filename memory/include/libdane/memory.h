@@ -14,17 +14,19 @@
 //==============================================================================
 
 /**
- * @brief Result codes for memory operations
+ * @brief Result codes for memory operations.
  */
 typedef enum {
-  RESULT_OK,             /**< Operation successful */
-  ERR_NO_MEMORY,         /**< No memory for the operation */
-  ERR_NOT_IMPLEMENTED,   /**< Functionality not yet implemented */
-  ERR_NULL_RECEIVED,     /**< A NULL pointer parameter was detected */
-  ERR_INVALID_POINTER,   /**< An invalid pointer parameter was detected */
-  ERR_ZEROED_SIZE_PARAM, /**< A zero size/capacity parameter was detected */
-  ERR_INVALID_FREE,      /**< Tried to free memory from an arena that has no
-                            allocations */
+  RESULT_OK,                  /**< Operation successful */
+  ERR_NO_MEMORY,              /**< No memory for the operation */
+  ERR_NOT_IMPLEMENTED,        /**< Functionality not yet implemented */
+  ERR_INVALID_NULL_PARAMETER, /**< A NULL pointer parameter was detected */
+  ERR_INVALID_POINTER,        /**< An invalid pointer parameter was detected */
+  ERR_INVALID_ZERO_PARAMETER, /**< An invalid zero value as a parameter */
+  ERR_INVALID_FREE, /**< Tried to free memory from an arena that has no
+                       allocations */
+  ERR_STACK_FULL,   /**< Tried to allocate when the stack is full */
+  ERR_STACK_EMPTY,  /**< Tried to free when the stack is empty */
   LIBD_MEMORY_RESULT_E_COUNT, /**< Count of result states */
 } libd_memory_result_e;
 
@@ -33,52 +35,58 @@ typedef enum {
 //==============================================================================
 
 /**
- * @brief Opaque handle for the bump arena
+ * @brief Opaque handle for the bump allocator.
  */
 typedef struct libd_memory_bump_arena_s libd_memory_bump_arena_s;
 
 /**
- * @brief Opaque handle for the pool allocator
+ * @brief Opaque handle for the pool allocator.
  */
 typedef struct libd_memory_pool_arena_s libd_memory_pool_arena_s;
+
+/**
+ * @brief Opque handle to the stack allocator.
+ */
+typedef struct libd_memory_stack_arena_s libd_memory_stack_arena_s;
 
 //==============================================================================
 // Bump Arena API
 //==============================================================================
 
 /**
- * @brief Initializes an arena that holds any types, but can only be reset.
- * @param pp_arena Pointer to recieve the created handle
- * @return RESULT_OK on success, error code otherwise
+ * @brief Creates a general purpose arena.
+ * @param pp_arena Out parameter for the created arena.
+ * @param capacity_bytes Capacity for the arena in bytes.
+ * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
 libd_memory_bump_arena_create(libd_memory_bump_arena_s** pp_arena,
                               size_t capacity_bytes);
 
 /**
- * @brief Sets a given pointer to start of a data block of the provided size.
- * @param p_arena Handle to the desired bump arena
- * @param pp_data Pointer to recieve the created handle
- * @param size Size of the block to allocate for
- * @return RESULT_OK on success, error code otherwise
+ * @brief Allocates memory in the arena.
+ * @param p_arena Handle to the arena.
+ * @param pp_data Out parameter for the pointer to the allocation.
+ * @param size_bytes Size in bytes for the allocation.
+ * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
 libd_memory_bump_arena_alloc(libd_memory_bump_arena_s* p_arena,
                              uint8_t** pp_data,
-                             size_t size);
+                             size_t size_bytes);
 
 /**
- * @brief Resets the arena. Accessing outdated pointers is undefined
- * @param p_arena Handle to the arena to reset
- * @return RESULT_OK on success, error code otherwise
+ * @brief Resets the arena by freeing all memory.
+ * @param p_arena Handle to the arena.
+ * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
 libd_memory_bump_arena_reset(libd_memory_bump_arena_s* p_arena);
 
 /**
- * @brief Frees (destroys) the arena
- * @param p_arena Handle to the arena to destroy
- * @return RESULT_OK on success, error code otherwise
+ * @brief Destroys the arena.
+ * @param p_arena Handle for the arena.
+ * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
 libd_memory_bump_arena_destroy(libd_memory_bump_arena_s* p_arena);
@@ -89,15 +97,14 @@ libd_memory_bump_arena_destroy(libd_memory_bump_arena_s* p_arena);
 //==============================================================================
 
 /**
- * @brief Initializes an arena with a capacity for objects of a given size
+ * @brief Creates an arena for allocations of a fixed size.
  * @warning Using a freelist capacity of 0 is treated as an error. Use a bump
  * arena instead.
- * @param pp_arena Pointer to recieve the created handle
- * @param capacity Max number of elements the pool should hold
- * @param size Size of the type to be held
- * @param free_capacity Maximum number of elements the free list should be able
- * to reference
- * @return RESULT_OK on success, error code otherwise
+ * @param pp_arena Out parameter for the created arena.
+ * @param capacity Maximum number of allocations the arena will handle.
+ * @param size Size of each allocation in bytes.
+ * @param free_capacity Maximum number of deallocations that will be tracked.
+ * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
 libd_memory_pool_arena_create(libd_memory_pool_arena_s** pp_arena,
@@ -106,37 +113,89 @@ libd_memory_pool_arena_create(libd_memory_pool_arena_s** pp_arena,
                               size_t free_capacity);
 
 /**
- * @brief Allocates space for the chosen type. Typecast the given pointer
- * @param p_arena Handle to the area to use
- * @param pp_data Pointer to the handle for the allocated memory
+ * @brief Destroys the arena.
+ * @param p_arena Handle for the arena.
  * @return RESULT_OK on success, error code otherwise
+ */
+libd_memory_result_e
+libd_memory_pool_arena_destroy(libd_memory_pool_arena_s* p_arena);
+
+/**
+ * @brief Allocates memory in the arena.
+ * @param p_arena Handle for the area.
+ * @param pp_data Out parameter for the pointer to the allocation.
+ * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
 libd_memory_pool_arena_alloc(libd_memory_pool_arena_s* p_arena,
                              uint8_t** pp_data);
 
 /**
- * @brief Frees the space of the given object for reuse
- * @param p_arena Handle to the arena
- * @param p_data Handle to the data to free
- * @return RESULT_OK on success, error code otherwise
+ * @brief Frees the allocation for the given handle.
+ * @param p_arena Handle for the arena.
+ * @param p_data Handle for the allocation to free.
+ * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
 libd_memory_pool_arena_free(libd_memory_pool_arena_s* p_arena, uint8_t* p_data);
 
 /**
- * @brief Resets the arena to the empty state
- * @param p_arena Handle to the arena
+ * @brief Resets the arena, freeing all allocations.
+ * @param p_arena Handle for the arena.
+ * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
 libd_memory_pool_arena_reset(libd_memory_pool_arena_s* p_arena);
 
+//==============================================================================
+// Stack Allocator API
+//==============================================================================
+
 /**
- * @brief Frees (destroys) the arena
- * @param p_arena Handle to the arena to destroy
- * @return RESULT_OK on success, error code otherwise
+ * @brief Creates an arena which behaves like a stack.
+ * @param pp_arena Out parameter for the arena.
+ * @param capacity_bytes The capacity of the arena in bytes.
+ * @param stack_capacity Maximum allocations the stack will track.
+ * @return RESULT_OK if success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_pool_arena_destroy(libd_memory_pool_arena_s* p_arena);
+libd_memory_stack_arena_create(libd_memory_stack_arena_s** pp_arena,
+                               size_t capacity_bytes,
+                               size_t stack_capacity);
+
+/**
+ * @brief Destroys the arena.
+ * @param p_arena Handle for the arena.
+ * @return RESULT_OK if success, non-zero otherwise.
+ */
+libd_memory_result_e
+libd_memory_stack_arena_destroy(libd_memory_stack_arena_s* p_arena);
+
+/**
+ * @brief Allocates memory in the arena.
+ * @param p_arena Handle to the arena.
+ * @param p_handle Out parameter for pointer to the allocation.
+ * @param size_bytes Number of bytes to allocate.
+ * @return RESULT_OK if success, non-zero otherwise.
+ */
+libd_memory_result_e
+libd_memory_stack_arena_alloc(libd_memory_stack_arena_s* p_arena,
+                              uint8_t** p_handle,
+                              size_t size_bytes);
+
+/**
+ * @brief Frees the top of the stack.
+ * @param p_arena Handle to the arena.
+ * @return RESULT_OK if success, non-zero otherwise.
+ */
+libd_memory_result_e
+libd_memory_stack_arena_free(libd_memory_stack_arena_s* p_arena);
+
+/**
+ * @brief Resets the arena, freeing all memory.
+ * @param p_arena Handle to the arena.
+ */
+libd_memory_result_e
+libd_memory_stack_arena_reset(libd_memory_stack_arena_s* p_arena);
 
 #endif  // LIBDANE_MEMORY_H
