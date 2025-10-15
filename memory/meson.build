@@ -8,9 +8,8 @@ memory_sources = files(
 # TODO: verify platform specifics
 if host_system in system_posix
   memory_sources += files(
-    'src/bump_arena.c',
-    'src/pool_arena.c',
-    'src/stack_arena.c',
+    'src/linear_allocator.c',
+    'src/pool_allocator.c',
   )
 else
   error('Unsupported platform: ' + host_system)
@@ -42,9 +41,8 @@ libd_memory_dep = declare_dependency(
 
 if build_tests
   test_sources = files(
-    'tests/bump_arena_test.c',
-    'tests/pool_arena_test.c',
-    'tests/stack_arena_test.c',
+    'tests/linear_allocator_test.c',
+    'tests/pool_allocator_test.c',
   )
 
   memory_test = executable('test_memory',
