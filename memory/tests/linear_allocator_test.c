@@ -41,22 +41,24 @@ helper_destroy_linear_allocator(libd_memory_linear_allocator_s* p_allocator)
 
 Test(linear_allocator, create_invalid_parameters)
 {
+  // null out parameter
   cr_assert(eq(u8, libd_memory_linear_allocator_create(NULL, 16, 2),
                ERR_INVALID_NULL_PARAMETER));
 
   libd_memory_linear_allocator_s* handle;
 
+  // zero capacity
   cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 0, 2),
                ERR_INVALID_ZERO_PARAMETER));
 
+  // invalid alignment values
   cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 16, 0),
                ERR_INVALID_ZERO_PARAMETER));
   cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 16, 3),
                ERR_INVALID_ALIGNMENT));
-  cr_assert(eq(u8,
-               libd_memory_linear_allocator_create(
-                 &handle, 16, LIBD_ALIGNOF(LIBD_MAX_ALIGN_T) * 2),
-               ERR_INVALID_ALIGNMENT));
+  cr_assert(
+    eq(u8, libd_memory_linear_allocator_create(&handle, 16, LIBD_MAX_ALIGN * 2),
+       ERR_INVALID_ALIGNMENT));
 }
 
 Test(linear_allocator, alloc_invalid_parameters)

@@ -62,7 +62,7 @@ typedef struct libd_memory_pool_allocator_s libd_memory_pool_allocator_s;
  * of 2.
  */
 static inline size_t
-libd_memory_align_offset(size_t offset, uint8_t alignment)
+libd_memory_align_value(size_t offset, uint8_t alignment)
 {
   return ((offset + alignment - 1) & ~(alignment - 1));
 }
