@@ -77,11 +77,14 @@ libd_memory_linear_allocator_alloc(linear_allocator_s* p_allocator,
   if (p_allocator->capacity < p_allocator->bytes_index + size) {
     return ERR_NO_MEMORY;
   }
+
+  // This state should not be possible.
   size_t aligned_index =
     libd_memory_align_value(p_allocator->bytes_index, p_allocator->alignment);
   if (aligned_index != p_allocator->bytes_index) {
     return ERR_INVALID_ALIGNMENT;
   }
+  // -----
 
   *out_pointer = &p_allocator->dat[p_allocator->bytes_index];
   p_allocator->bytes_index +=

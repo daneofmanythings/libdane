@@ -46,9 +46,9 @@ typedef struct libd_memory_linear_allocator_savepoint_s
   libd_memory_linear_allocator_savepoint_s;
 
 /**
- * @brief Opaque handle for the pool allocator.
+ * @brief Opaque handle for the slab allocator.
  */
-typedef struct libd_memory_pool_allocator_s libd_memory_pool_allocator_s;
+typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_s;
 
 //==============================================================================
 // Inline Helper Functions
@@ -152,59 +152,61 @@ libd_memory_linear_allocator_reset(libd_memory_linear_allocator_s* p_allocator);
 
 
 //==============================================================================
-// Pool Allocator API
+// Slab Allocator API
 //==============================================================================
 
 /**
- * @brief Creates an arena for allocations of a fixed size.
- * @warning Using a freelist capacity of 0 is treated as an error. Use a linear
- * arena instead.
- * @param pp_arena Out parameter for the created arena.
- * @param capacity Maximum number of allocations the arena will handle.
- * @param size Size of each allocation in bytes.
- * @param free_capacity Maximum number of deallocations that will be tracked.
+ * @brief Handles a fixed size/alignment allocations and supports freeing of
+ * individual allocations. Simple implementation with no regard for page sizing
+ * optimizations.
+ * @warning The free list is handled as an embedded ring buffer with capacity
+ * equal to the capacity of the allocator. The footprint may be large. There is
+ * no algorithm to address possible fragmentation of the slab.
+ * @param out_allocator Out parameter for the allocator.
+ * @param max_allocations Maximum number of allocations.
+ * @param bytes_per_alloc Size, in bytes, per allocation.
  * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_pool_allocator_create(libd_memory_pool_allocator_s** out_allocator,
-                                  size_t capacity,
-                                  size_t datum_size,
-                                  size_t freelist_capacity);
+libd_memory_slab_allocator_create(libd_memory_slab_allocator_s** out_allocator,
+                                  size_t max_allocations,
+                                  size_t bytes_per_alloc,
+                                  uint8_t alignment);
 
 /**
- * @brief Destroys the arena.
- * @param p_arena Handle for the arena.
+ * @brief Destroys the allocator.
+ * @param p_allocator Handle for the allocator.
  * @return RESULT_OK on success, error code otherwise
  */
 libd_memory_result_e
-libd_memory_pool_allocator_destroy(libd_memory_pool_allocator_s* allocator);
+libd_memory_slab_allocator_destroy(libd_memory_slab_allocator_s* p_allocator);
 
 /**
- * @brief Allocates memory in the arena.
- * @param p_arena Handle for the area.
- * @param pp_data Out parameter for the pointer to the allocation.
+ * @brief Allocates memory in a free block.
+ * @param p_allocator Handle for the allocator.
+ * @param out_pointer Out parameter for the pointer to the allocation.
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_pool_allocator_alloc(libd_memory_pool_allocator_s* allocator,
-                                 void** out_param);
+libd_memory_slab_allocator_alloc(libd_memory_slab_allocator_s* p_allocator,
+                                 void** out_pointer);
 
 /**
  * @brief Frees the allocation for the given handle.
- * @param p_arena Handle for the allocator.
- * @param p_data Handle for the allocation to free.
+ * @param p_allocator Handle for the allocator.
+ * @param p_to_free Handle for the allocation to free.
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_pool_allocator_free(libd_memory_pool_allocator_s* allocator,
-                                void* p_data);
+libd_memory_slab_allocator_free(libd_memory_slab_allocator_s* p_allocator,
+                                void* p_to_free);
 
 /**
- * @brief Resets the arena, freeing all allocations.
- * @param p_arena Handle for the arena.
+ * @brief Resets the slab, freeing all allocations.
+ * @param p_allocator Handle for the allocator.
  * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_pool_allocator_reset(libd_memory_pool_allocator_s* allocator);
+libd_memory_slab_allocator_reset(libd_memory_slab_allocator_s* p_allocator);
 
 #endif  // LIBDANE_MEMORY_H

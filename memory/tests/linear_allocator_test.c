@@ -2,6 +2,7 @@
 #include "../include/libdane/memory.h"
 
 #include <criterion/criterion.h>
+#include <criterion/internal/new_asserts.h>
 #include <criterion/new/assert.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -61,8 +62,34 @@ Test(linear_allocator, create_invalid_parameters)
        ERR_INVALID_ALIGNMENT));
 }
 
+Test(linear_allocator, alloc_general_use)
+{
+  libd_memory_linear_allocator_s* la =
+    helper_create_linear_allocator(DEFAULT_CAPACITY, LIBD_ALIGNOF(medium_s));
+
+  // TODO: finish
+
+  helper_destroy_linear_allocator(la);
+}
+
 Test(linear_allocator, alloc_invalid_parameters)
 {
   libd_memory_linear_allocator_s* la =
     helper_create_linear_allocator(DEFAULT_CAPACITY, LIBD_ALIGNOF(medium_s));
+
+  void* op;
+  cr_assert(eq(u8,
+               libd_memory_linear_allocator_alloc(la, NULL, sizeof(medium_s)),
+               ERR_INVALID_NULL_PARAMETER));
+  cr_assert(eq(u8,
+               libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
+               ERR_INVALID_NULL_PARAMETER));
+  cr_assert(eq(u8,
+               libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
+               ERR_INVALID_NULL_PARAMETER));
+
+
+  helper_destroy_linear_allocator(la);
 }
+
+// TODO: FINISH THE TEST SUITE
