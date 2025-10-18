@@ -33,14 +33,14 @@ libd_memory_slab_allocator_create(slab_allocator_s** out_allocator,
                                   uint8_t alignment)
 {
   if (out_allocator == NULL) {
-    return ERR_INVALID_NULL_PARAMETER;
+    return LIBD_MEM_INVALID_NULL_PARAMETER;
   }
   if (max_allocations == 0 || bytes_per_alloc == 0) {
-    return ERR_INVALID_ZERO_PARAMETER;
+    return LIBD_MEM_INVALID_ZERO_PARAMETER;
   }
 
   if (bytes_per_alloc < alignment || !libd_memory_is_power_of_two(alignment)) {
-    return ERR_INVALID_ALIGNMENT;
+    return LIBD_MEM_INVALID_ALIGNMENT;
   }
 
   size_t aligned_bytes_per_alloc =
@@ -54,7 +54,7 @@ libd_memory_slab_allocator_create(slab_allocator_s** out_allocator,
   slab_allocator_s* p_allocator = malloc(total_allocation_size_bytes);
 
   if (p_allocator == NULL) {
-    return ERR_NO_MEMORY;
+    return LIBD_MEM_NO_MEMORY;
   }
 
   p_allocator->max_allocations = max_allocations;
@@ -65,7 +65,7 @@ libd_memory_slab_allocator_create(slab_allocator_s** out_allocator,
 
   *out_allocator = p_allocator;
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 libd_memory_result_e
@@ -73,14 +73,15 @@ libd_memory_slab_allocator_alloc(slab_allocator_s* p_allocator,
                                  void** out_pointer)
 {
   size_t next_index = 0;
-  if (_embedded_ring_buffer_read_index(p_allocator, &next_index) != RESULT_OK) {
-    return ERR_NO_MEMORY;
+  if (_embedded_ring_buffer_read_index(p_allocator, &next_index) !=
+      LIBD_MEM_OK) {
+    return LIBD_MEM_NO_MEMORY;
   }
   size_t byte_offset = next_index * p_allocator->bytes_per_alloc;
 
   *out_pointer = DATA_ARRAY(p_allocator) + byte_offset;
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 libd_memory_result_e
@@ -88,21 +89,21 @@ libd_memory_slab_allocator_free(slab_allocator_s* p_allocator, void* p_to_free)
 {
   ptrdiff_t byte_offset = (uint8_t*)p_to_free - DATA_ARRAY(p_allocator);
   if (byte_offset < 0 || byte_offset % p_allocator->bytes_per_alloc != 0) {
-    return ERR_INVALID_POINTER;  // below bounds or not block aligned
+    return LIBD_MEM_INVALID_POINTER;  // below bounds or not block aligned
   }
 
   size_t freed_index = byte_offset / p_allocator->bytes_per_alloc;
   if (freed_index >= p_allocator->max_allocations) {
-    return ERR_INVALID_POINTER;  // above bounds
+    return LIBD_MEM_INVALID_POINTER;  // above bounds
   }
 
   libd_memory_result_e result =
     _embedded_ring_buffer_write_index(p_allocator, freed_index);
-  if (result != RESULT_OK) {
+  if (result != LIBD_MEM_OK) {
     return result;
   }
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 libd_memory_result_e
@@ -110,19 +111,19 @@ libd_memory_slab_allocator_reset(slab_allocator_s* p_allocator)
 {
   _embedded_ring_buffer_init(p_allocator, p_allocator->rbuf_capacity);
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 libd_memory_result_e
 libd_memory_slab_allocator_destroy(slab_allocator_s* p_allocator)
 {
   if (p_allocator == NULL) {
-    return ERR_INVALID_NULL_PARAMETER;
+    return LIBD_MEM_INVALID_NULL_PARAMETER;
   }
 
   free(p_allocator);
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 static bool
@@ -155,7 +156,7 @@ _embedded_ring_buffer_read_index(slab_allocator_s* p_allocator,
                                  size_t* next_idx)
 {
   if (_embedded_rbuf_is_empty(p_allocator)) {
-    return ERR_NO_MEMORY;  // Freelist is empty so the arena is full.
+    return LIBD_MEM_NO_MEMORY;  // Freelist is empty so the arena is full.
   }
 
   *next_idx = FREE_LIST(p_allocator)[p_allocator->rbuf_read_idx];
@@ -164,7 +165,7 @@ _embedded_ring_buffer_read_index(slab_allocator_s* p_allocator,
     (p_allocator->rbuf_read_idx + 1) % p_allocator->rbuf_capacity;
   p_allocator->rbuf_count -= 1;
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 libd_memory_result_e
@@ -172,7 +173,7 @@ _embedded_ring_buffer_write_index(slab_allocator_s* p_allocator,
                                   size_t freed_index)
 {
   if (_embedded_rbuf_is_full(p_allocator)) {
-    return ERR_INVALID_FREE;  // Freelist is full, so the arena is empty.
+    return LIBD_MEM_INVALID_FREE;  // Freelist is full, so the arena is empty.
   }
 
   FREE_LIST(p_allocator)[p_allocator->rbuf_write_idx] = freed_index;
@@ -181,7 +182,7 @@ _embedded_ring_buffer_write_index(slab_allocator_s* p_allocator,
     (p_allocator->rbuf_write_idx + 1) % p_allocator->rbuf_capacity;
   p_allocator->rbuf_count += 1;
 
-  return RESULT_OK;
+  return LIBD_MEM_OK;
 }
 
 static bool

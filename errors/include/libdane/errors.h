@@ -12,11 +12,13 @@
 //==============================================================================
 
 /**
- * @brief Result codes
+ * @brief Result codes. Note that return values are being inherited from the
+ * platform library. This is not intended, just a side effect of 'good enough.'
+ * I will get around to fixing it eventually.
  */
 #include <stddef.h>
 typedef enum {
-  RESULT_OK,
+  LIBD_ERR_OK,
   LIBD_ERRORS_RESULT_E_COUNT,
 } libd_errors_result_e;
 

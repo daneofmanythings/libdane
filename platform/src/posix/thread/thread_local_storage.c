@@ -33,40 +33,39 @@ libd_platform_thread_local_storage_create(handle_s** p_handle,
   handle_s* handle = malloc(sizeof(handle_s));
   if (handle == NULL) {
     // TODO:
-    return ERR_NO_MEMORY;
+    return LIBD_PF_THREAD_NO_MEMORY;
   }
 
   handle->data_size = size;
 
   if (pthread_key_create(&handle->key, destructor) != 0) {
     free(handle);
-    // TODO:
-    return ERR_NO_MEMORY;
+    return LIBD_PF_THREAD_NO_MEMORY;
   }
 
   *p_handle = handle;
 
-  return RESULT_OK;
+  return LIBD_PF_THREAD_OK;
 }
 
 result_e
 libd_platform_thread_local_storage_destroy(handle_s* handle)
 {
   if (handle == NULL) {
-    return ERR_NULL_PARAMETER;
+    return LIBD_PF_THREAD_NULL_PARAMETER;
   }
 
   pthread_key_delete(handle->key);
   free(handle);
 
-  return RESULT_OK;
+  return LIBD_PF_THREAD_OK;
 }
 
 result_e
 libd_platform_thread_local_storage_get(handle_s* handle, void** pp_data)
 {
   if (handle == NULL) {
-    return ERR_NULL_PARAMETER;
+    return LIBD_PF_THREAD_NULL_PARAMETER;
   }
 
   void* p_data = pthread_getspecific(handle->key);
@@ -74,7 +73,7 @@ libd_platform_thread_local_storage_get(handle_s* handle, void** pp_data)
   if (p_data == NULL) {
     p_data = malloc(handle->data_size);
     if (p_data == NULL) {
-      return ERR_NO_MEMORY;
+      return LIBD_PF_THREAD_NO_MEMORY;
     }
     if (pthread_setspecific(handle->key, p_data) != 0) {
       free(p_data);
@@ -85,7 +84,7 @@ libd_platform_thread_local_storage_get(handle_s* handle, void** pp_data)
 
   *pp_data = p_data;
 
-  return RESULT_OK;
+  return LIBD_PF_THREAD_OK;
 }
 
 result_e
@@ -94,23 +93,23 @@ libd_platform_thread_local_storage_set(handle_s* handle,
                                        void* new_data)
 {
   if (handle == NULL || new_data == NULL) {
-    return ERR_NULL_PARAMETER;
+    return LIBD_PF_THREAD_NULL_PARAMETER;
   }
 
   void* p_data;
   result_e result = libd_platform_thread_local_storage_get(handle, &p_data);
-  if (result != RESULT_OK) {
+  if (result != LIBD_PF_THREAD_OK) {
     return result;
   }
 
   if (setter_f != NULL) {
     setter_f(p_data, new_data);
-    return RESULT_OK;
+    return LIBD_PF_THREAD_OK;
   }
 
   memcpy(p_data, new_data, handle->data_size);
 
-  return RESULT_OK;
+  return LIBD_PF_THREAD_OK;
 }
 
 static void
@@ -120,7 +119,7 @@ result_e
 libd_platform_thread_local_static_init(destructor_f destructor, size_t size)
 {
   if (g_static_handle != NULL) {
-    return RESULT_OK;
+    return LIBD_PF_THREAD_OK;
   }
 
   g_static_destructor = destructor;
@@ -128,17 +127,17 @@ libd_platform_thread_local_static_init(destructor_f destructor, size_t size)
   pthread_once(&g_static_once, _init_static_thread_local_storage);
 
   if (g_static_handle == NULL) {
-    return ERR_INIT_FAILED;
+    return LIBD_PF_THREAD_INIT_FAILED;
   }
 
-  return RESULT_OK;
+  return LIBD_PF_THREAD_OK;
 }
 
 result_e
 libd_platform_thread_local_static_get(void** pp_data)
 {
   if (g_static_handle == NULL) {
-    return ERR_NOT_INITIALIZED;
+    return LIBD_PF_THREAD_NOT_INITIALIZED;
   }
   return libd_platform_thread_local_storage_get(g_static_handle, pp_data);
 }
@@ -147,7 +146,7 @@ result_e
 libd_platform_thread_local_static_set(data_setter_f setter, void* data)
 {
   if (g_static_handle == NULL) {
-    return ERR_NOT_INITIALIZED;
+    return LIBD_PF_THREAD_NOT_INITIALIZED;
   }
   return libd_platform_thread_local_storage_set(g_static_handle, setter, data);
 }
@@ -156,7 +155,7 @@ result_e
 libd_platform_thread_local_static_cleanup(void)
 {
   if (g_static_handle == NULL) {
-    return ERR_NOT_INITIALIZED;
+    return LIBD_PF_THREAD_NOT_INITIALIZED;
   }
   return libd_platform_thread_local_storage_destroy(g_static_handle);
 }
@@ -168,7 +167,7 @@ _init_static_thread_local_storage(void)
     libd_platform_thread_local_storage_create(
       &g_static_handle, g_static_destructor, g_static_size);
 
-  if (result != RESULT_OK) {
+  if (result != LIBD_PF_THREAD_OK) {
     fprintf(stderr, "Failed to create thread-local storage for the singleton "
                     "storage element.\n");
     exit(result);

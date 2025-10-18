@@ -16,14 +16,14 @@
  * @brief Result codes for thread operations
  */
 typedef enum {
-  RESULT_OK, /**< Operation succeeded */
-
-  ERR_NO_MEMORY,       /**< Could not allocate memory for the operation */
-  ERR_NULL_PARAMETER,  /**< Recieved an unexpected null pointer as
+  LIBD_PF_THREAD_OK,        /**< Operation succeeded */
+  LIBD_PF_THREAD_NO_MEMORY, /**< Could not allocate memory for the operation */
+  LIBD_PF_THREAD_NULL_PARAMETER,  /**< Recieved an unexpected null pointer as
                          a parameter */
-  ERR_INIT_FAILED,     /**< Initialization of the singleton slot failed */
-  ERR_NOT_INITIALIZED, /**< Dependent functions called before initialization */
-  LIBD_PLATFORM_RESULT_E_COUNT, /**< Total number of result codes */
+  LIBD_PF_THREAD_INIT_FAILED,     /**< Initialization of the singleton failed */
+  LIBD_PF_THREAD_NOT_INITIALIZED, /**< Dependent functions called before
+                                     initialization */
+  LIBD_PLATFORM_THREAD_RESULT_E_COUNT, /**< Total number of result codes */
 } libd_platform_thread_result_e;
 
 //==============================================================================

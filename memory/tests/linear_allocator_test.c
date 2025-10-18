@@ -27,7 +27,7 @@ helper_create_linear_allocator(size_t capacity, uint8_t alignment)
   libd_memory_linear_allocator_s* allocator;
   libd_memory_result_e result =
     libd_memory_linear_allocator_create(&allocator, capacity, alignment);
-  cr_assert(eq(u8, result, RESULT_OK));
+  cr_assert(eq(u8, result, LIBD_MEM_OK));
 
   return allocator;
 }
@@ -37,29 +37,29 @@ helper_destroy_linear_allocator(libd_memory_linear_allocator_s* p_allocator)
 {
   libd_memory_result_e result =
     libd_memory_linear_allocator_destroy(p_allocator);
-  cr_assert(eq(u8, result, RESULT_OK));
+  cr_assert(eq(u8, result, LIBD_MEM_OK));
 }
 
 Test(linear_allocator, create_invalid_parameters)
 {
   // null out parameter
   cr_assert(eq(u8, libd_memory_linear_allocator_create(NULL, 16, 2),
-               ERR_INVALID_NULL_PARAMETER));
+               LIBD_MEM_INVALID_NULL_PARAMETER));
 
   libd_memory_linear_allocator_s* handle;
 
   // zero capacity
   cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 0, 2),
-               ERR_INVALID_ZERO_PARAMETER));
+               LIBD_MEM_INVALID_ZERO_PARAMETER));
 
   // invalid alignment values
   cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 16, 0),
-               ERR_INVALID_ZERO_PARAMETER));
+               LIBD_MEM_INVALID_ZERO_PARAMETER));
   cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 16, 3),
-               ERR_INVALID_ALIGNMENT));
+               LIBD_MEM_INVALID_ALIGNMENT));
   cr_assert(
     eq(u8, libd_memory_linear_allocator_create(&handle, 16, LIBD_MAX_ALIGN * 2),
-       ERR_INVALID_ALIGNMENT));
+       LIBD_MEM_INVALID_ALIGNMENT));
 }
 
 Test(linear_allocator, alloc_general_use)
@@ -80,13 +80,13 @@ Test(linear_allocator, alloc_invalid_parameters)
   void* op;
   cr_assert(eq(u8,
                libd_memory_linear_allocator_alloc(la, NULL, sizeof(medium_s)),
-               ERR_INVALID_NULL_PARAMETER));
+               LIBD_MEM_INVALID_NULL_PARAMETER));
   cr_assert(eq(u8,
                libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
-               ERR_INVALID_NULL_PARAMETER));
+               LIBD_MEM_INVALID_NULL_PARAMETER));
   cr_assert(eq(u8,
                libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
-               ERR_INVALID_NULL_PARAMETER));
+               LIBD_MEM_INVALID_NULL_PARAMETER));
 
 
   helper_destroy_linear_allocator(la);

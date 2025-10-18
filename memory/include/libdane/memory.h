@@ -18,16 +18,16 @@
  * @brief Result codes for memory operations.
  */
 typedef enum {
-  RESULT_OK,                  /**< Operation successful */
-  ERR_NO_MEMORY,              /**< No memory for the operation */
-  ERR_NOT_IMPLEMENTED,        /**< Functionality not yet implemented */
-  ERR_INVALID_ALIGNMENT,      /**< An invalid alignment value was given */
-  ERR_INVALID_NULL_PARAMETER, /**< A NULL pointer parameter was detected */
-  ERR_INVALID_POINTER,        /**< An invalid pointer parameter was detected */
-  ERR_INVALID_ZERO_PARAMETER, /**< An invalid zero value as a parameter */
-  ERR_INVALID_FREE, /**< Tried to free memory from an arena that has no
-                       allocations */
-  LIBD_MEMORY_RESULT_E_COUNT, /**< Count of result states */
+  LIBD_MEM_OK,                     /**< Operation successful */
+  LIBD_MEM_NO_MEMORY,              /**< No memory for the operation */
+  LIBD_MEM_NOT_IMPLEMENTED,        /**< Functionality not yet implemented */
+  LIBD_MEM_INVALID_ALIGNMENT,      /**< An invalid alignment value was given */
+  LIBD_MEM_INVALID_NULL_PARAMETER, /**< A NULL pointer parameter was detected */
+  LIBD_MEM_INVALID_POINTER, /**< An invalid pointer parameter was detected */
+  LIBD_MEM_INVALID_ZERO_PARAMETER, /**< An invalid zero value as a parameter */
+  LIBD_MEM_INVALID_FREE,   /**< Tried to free memory from an arena that has no
+                         allocations */
+  LIBD_MEM_RESULT_E_COUNT, /**< Count of result states */
 } libd_memory_result_e;
 
 //==============================================================================
@@ -49,6 +49,11 @@ typedef struct libd_memory_linear_allocator_savepoint_s
  * @brief Opaque handle for the slab allocator.
  */
 typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_s;
+
+/**
+ * @brief Allocator callback signature
+ */
+typedef void* (*libd_memory_allocator_callback_f)(void*, size_t);
 
 //==============================================================================
 // Inline Helper Functions
