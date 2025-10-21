@@ -10,6 +10,7 @@
 // Includes
 //==============================================================================
 
+#include "platform/filesystem.h"
 #include "platform/thread.h"
 
 #endif  // LIBD_PLATFORM_H

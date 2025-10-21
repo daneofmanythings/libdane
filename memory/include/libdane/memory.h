@@ -51,10 +51,19 @@ typedef struct libd_memory_linear_allocator_savepoint_s
 typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_s;
 
 /**
- * @brief Allocator callback signature
+ * @brief Alloc allback signature to pass to initializers.
+ * @param ctx All the context for the allocator.
+ * @param2 size Bytes to allocate.
+ * @return Pointer to the allocated memory.
  */
-typedef void* (*libd_memory_allocator_callback_f)(void*, size_t);
+typedef void* (*libd_memory_alloc_callback_f)(void* ctx, size_t size_bytes);
 
+/**
+ * @brief Free callback function to pass to initializers.
+ * @param ctx Allocator context.
+ * @param mem_handle Allocator aware handle to the memory to free.
+ */
+typedef void (*libd_memory_free_callback_f)(void* ctx, void* mem_handle);
 //==============================================================================
 // Inline Helper Functions
 //==============================================================================
