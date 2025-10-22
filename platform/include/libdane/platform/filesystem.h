@@ -10,7 +10,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-
 //==============================================================================
 // Result Codes
 //==============================================================================
@@ -22,8 +21,10 @@ typedef enum {
   LIBD_PF_FS_OK, /**< Operation successful */
   LIBD_PF_FS_NO_MEMORY,
   LIBD_PF_FS_NULL_PARAMETER,
-  LIBD_PF_FS_PATH_INVALID, /**< The path provided is invalid */
+  LIBD_PF_FS_INVALID_PATH, /**< The path provided is invalid */
   LIBD_PF_FS_PATH_TOO_LONG,
+  LIBD_PF_FS_EMPTY_PATH,
+  LIBD_PF_FS_INVALID_PATH_TYPE,
   LIBD_PF_FS_PATH_ENV_VAR_NOT_FOUND,
   LIBD_PF_FS_TOO_MANY_ENV_EXPANSIONS,
   LIBD_PLATFORM_FILESYSTEM_RESULT_E_COUNT, /**< The number of result codes */
@@ -39,12 +40,20 @@ typedef enum {
 typedef struct libd_platform_filesystem_path_s libd_platform_filesystem_path_o;
 
 /**
+ * @brief Signature for generic environment variable getter.
+ * @param var The key for the environment variable.
+ * @return The value associated with the environment variable.
+ */
+typedef const char* (*libd_platform_filesystem_env_getter_f)(const char* key);
+
+/**
  * @brief Used in the initialization of a path object to clarify the state of
  * the last component.
  */
 typedef enum {
   LIBD_PF_FS_DIRETORY,
   LIBD_PF_FS_FILE,
+  LIBD_PF_FS_PATH_TYPE_E_COUNT,
 } libd_platform_filetype_path_type_e;
 
 //==============================================================================
@@ -82,20 +91,22 @@ typedef enum {
 // Path API
 //==============================================================================
 
-
 /**
  * @brief Normalizes and initialize a raw path into a path object.
  * @param out_path Out parameter for the path object.
  * @param raw_path The input path value.
  * @param raw_path_length_bytes Length of path_raw in bytes
  * @param type Indicate whether the path ends in a directory or a file.
+ * @param env_getter The function used to retrieve environment variables.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
 libd_platform_filesystem_result_e
-libd_platform_filesystem_path_init(libd_platform_filesystem_path_o* out_path,
-                                   const char* raw_path,
-                                   size_t raw_path_length_bytes,
-                                   libd_platform_filetype_path_type_e type);
+libd_platform_filesystem_path_init(
+  libd_platform_filesystem_path_o* out_path,
+  const char* raw_path,
+  size_t raw_path_length_bytes,
+  libd_platform_filetype_path_type_e type,
+  libd_platform_filesystem_env_getter_f env_getter);
 
 /**
  * @brief Join two paths and initialize into the out parameter.
@@ -178,12 +189,19 @@ libd_platform_filesystem_path_filename(
   libd_platform_filesystem_path_o* out_path,
   const libd_platform_filesystem_path_o* filename_path);
 
+/**
+ * @brief Returns a pointer to the internal path string.
+ * @param path Path to examine
+ * @return pointer to the internal path string.
+ */
+const char*
+libd_platform_filesystem_path_string(libd_platform_filesystem_path_o* path);
+
 // get extension
 
 // strip extension
 
 // has extension
-
 
 //==============================================================================
 // Directory Management API

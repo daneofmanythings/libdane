@@ -4,11 +4,13 @@ platform_includes = include_directories('include')
 platform_sources = files(
   'include/libdane/platform.h',
   'include/libdane/platform/thread.h',
+  'include/libdane/platform/filesystem.h',
 )
 
 if host_system in system_posix
   platform_sources += files(
     'src/posix/thread/thread_local_storage.c',
+    'src/posix/filesystem/path.c',
   )
 else
   error('Unsupported platform: ' + host_system)
@@ -33,6 +35,7 @@ install_headers(
 # sub-headers
 install_headers(
   'include/libdane/platform/thread.h',
+  'include/libdane/platform/filesystem.h',
   subdir: 'libdane/platform'
 )
 
@@ -47,6 +50,7 @@ libd_platform_dep = declare_dependency(
 if build_tests
   test_sources = files(
     'tests/thread_local_storage_test.c',
+    'tests/path_test.c',
   )
 
   platform_test = executable('test_platform',

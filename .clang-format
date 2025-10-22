@@ -1,6 +1,6 @@
 DerivePointerAlignment: false
 PointerAlignment: Left
-AlignArrayOfStructures: Right
+AlignArrayOfStructures: None
 ColumnLimit: 80
 
 IndentWidth: 2
@@ -11,10 +11,13 @@ AllowAllParametersOfDeclarationOnNextLine: false
 BinPackParameters: false
 AlignAfterOpenBracket: Align
 ContinuationIndentWidth: 2
+AllowShortBlocksOnASingleLine: Never
+Cpp11BracedListStyle: false
 
 BreakBeforeBraces: Custom 
 BraceWrapping:
   AfterFunction: true
-MaxEmptyLinesToKeep: 2
+
+MaxEmptyLinesToKeep: 1
 SpacesBeforeTrailingComments: 2
 
