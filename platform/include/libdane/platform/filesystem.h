@@ -25,6 +25,7 @@ typedef enum {
   LIBD_PF_FS_PATH_TOO_LONG,
   LIBD_PF_FS_EMPTY_PATH,
   LIBD_PF_FS_INVALID_PATH_TYPE,
+  LIBD_PF_FS_PATH_OUT_OF_BOUNDS,
   LIBD_PF_FS_PATH_ENV_VAR_NOT_FOUND,
   LIBD_PF_FS_TOO_MANY_ENV_EXPANSIONS,
   LIBD_PLATFORM_FILESYSTEM_RESULT_E_COUNT, /**< The number of result codes */
@@ -47,43 +48,49 @@ typedef struct libd_platform_filesystem_path_s libd_platform_filesystem_path_o;
 typedef const char* (*libd_platform_filesystem_env_getter_f)(const char* key);
 
 /**
- * @brief Used in the initialization of a path object to clarify the state of
- * the last component.
+ * @brief Used in the initialization of a path object to clarify the type of
+ * the path. The state is encoded into the path string during initialization.
+ * @note The order of this enum should not change because it allows for bit
+ * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
  */
 typedef enum {
-  LIBD_PF_FS_DIRETORY,
-  LIBD_PF_FS_FILE,
-  LIBD_PF_FS_PATH_TYPE_E_COUNT,
+  LIBD_PF_FS_REL_FILE     = 0,  // 0b0000
+  LIBD_PF_FS_ABS_FILE     = 1,  // 0b0001
+  LIBD_PF_FS_REL_DIRETORY = 2,  // 0b0010
+  LIBD_PF_FS_ABS_DIRETORY = 3,  // 0b0011
 } libd_platform_filetype_path_type_e;
+
+#define LIBD_PF_FS_IS_ABS 1  // bit 0
+#define LIBD_PF_FS_IS_DIR 2  // bit 1
 
 //==============================================================================
 // Path size definitions
 //==============================================================================
 
 #ifdef _WIN32
-// Windows path limitations
-// Note: Long paths (>260 characters) are not supported.
-// The \\?\ prefix for long paths is not handled by this library.
-#define LIBD_PF_FS_NAME_MAX 255
-#define LIBD_PF_FS_PATH_MAX 260
-#define LIBD_PF_FS_PATH_ALLOC_SIZE 272  // Conservatively sized for struct
+  // Windows path limitations
+  // Note: Long paths (>260 characters) are not supported.
+  // The \\?\ prefix for long paths is not handled by this library.
+  #define LIBD_PF_FS_NAME_MAX        255
+  #define LIBD_PF_FS_PATH_MAX        260
+  #define LIBD_PF_FS_PATH_ALLOC_SIZE 272  // Conservatively sized for struct
 
 #else  // POSIX
-#include <limits.h>
+  #include <limits.h>
 
-#ifdef NAME_MAX
-#define LIBD_PF_FS_NAME_MAX NAME_MAX
-#else
-#define LIBD_PF_FS_NAME_MAX 255
-#endif
+  #ifdef NAME_MAX
+    #define LIBD_PF_FS_NAME_MAX NAME_MAX
+  #else
+    #define LIBD_PF_FS_NAME_MAX 255
+  #endif
 
-#ifdef PATH_MAX
-#define LIBD_PF_FS_PATH_MAX PATH_MAX
-#else
-#define LIBD_PF_FS_PATH_MAX 4096
-#endif
+  #ifdef PATH_MAX
+    #define LIBD_PF_FS_PATH_MAX PATH_MAX
+  #else
+    #define LIBD_PF_FS_PATH_MAX 4096
+  #endif
 
-#define LIBD_PF_FS_PATH_ALLOC_SIZE 4112  // Conservatively sized for struct
+  #define LIBD_PF_FS_PATH_ALLOC_SIZE 4112  // Conservatively sized for struct
 
 #endif  // _WIN32
 
@@ -102,10 +109,10 @@ typedef enum {
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_init(
-  libd_platform_filesystem_path_o* out_path,
-  const char* raw_path,
-  size_t raw_path_length_bytes,
-  libd_platform_filetype_path_type_e type,
+  libd_platform_filesystem_path_o*      out_path,
+  const char*                           raw_path,
+  size_t                                raw_path_length_bytes,
+  libd_platform_filetype_path_type_e    type,
   libd_platform_filesystem_env_getter_f env_getter);
 
 /**
@@ -117,7 +124,7 @@ libd_platform_filesystem_path_init(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_join(
-  libd_platform_filesystem_path_o* out_path,
+  libd_platform_filesystem_path_o*       out_path,
   const libd_platform_filesystem_path_o* lhs_path,
   const libd_platform_filesystem_path_o* rhs_path);
 
@@ -129,7 +136,7 @@ libd_platform_filesystem_path_join(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_append(
-  libd_platform_filesystem_path_o* lhs_path,
+  libd_platform_filesystem_path_o*       lhs_path,
   const libd_platform_filesystem_path_o* rhs_path);
 
 /**
@@ -142,9 +149,9 @@ libd_platform_filesystem_path_append(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_ancestor(
-  libd_platform_filesystem_path_o* out_path,
+  libd_platform_filesystem_path_o*       out_path,
   const libd_platform_filesystem_path_o* start_path,
-  uint16_t n);
+  uint16_t                               n);
 
 /**
  * @brief Checks if child_path is a subpath of parent_path. The comparison is
@@ -158,7 +165,7 @@ libd_platform_filesystem_path_ancestor(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_is_subpath_of(
-  bool* out_is_subpath,
+  bool*                                  out_is_subpath,
   const libd_platform_filesystem_path_o* parent_path,
   const libd_platform_filesystem_path_o* child_path);
 
@@ -173,7 +180,7 @@ libd_platform_filesystem_path_is_subpath_of(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_is_equal(
-  bool* out_is_equal,
+  bool*                                  out_is_equal,
   const libd_platform_filesystem_path_o* path1,
   const libd_platform_filesystem_path_o* path2);
 
@@ -186,7 +193,7 @@ libd_platform_filesystem_path_is_equal(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_filename(
-  libd_platform_filesystem_path_o* out_path,
+  libd_platform_filesystem_path_o*       out_path,
   const libd_platform_filesystem_path_o* filename_path);
 
 /**

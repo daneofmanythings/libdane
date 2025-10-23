@@ -61,7 +61,7 @@ if build_tests
     ],
   )
 
-  args = ['--verbose']
+  args = ['']
   
   test('platform tests', platform_test, args: args)
 endif

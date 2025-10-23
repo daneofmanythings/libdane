@@ -19,107 +19,206 @@ env_var_getter(const char* var)
 struct init_params {
   const char test_name[64];
   const char input_path[64];
-  libd_platform_filetype_path_type_e input_type;
-  const char* (*input_env_getter)(const char*);
-  libd_platform_filesystem_result_e expected_result;
   const char expected_path[64];
+
+  libd_platform_filetype_path_type_e input_type;
+  libd_platform_filesystem_result_e  expected_result;
+
+  const char* (*input_env_getter)(const char*);
 };
 
-ParameterizedTestParameters(path, init_env_expansion)
+ParameterizedTestParameters(
+  path,
+  init_env_expansion)
 {
   static struct init_params params[] = {
-    // Normalization
-    { .test_name = "Basic diretory test\0",
-      .input_path = "/basic/directory/test/\0",
-      .input_type = LIBD_PF_FS_DIRETORY,
+    {
+      .test_name        = "simple absolute directory test 1\0",
+      .input_path       = "/test/\0",
+      .expected_path    = "/test/\0",
+      .input_type       = LIBD_PF_FS_DIRETORY,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/basic/directory/test/\0" },
-    { .test_name = "Basic file test\0",
-      .input_path = "/basic/file/test/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple absolute directory test 2\0",
+      .input_path       = "/test\0",
+      .expected_path    = "/test/\0",
+      .input_type       = LIBD_PF_FS_DIRETORY,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/basic/file/test\0" },
-    { .test_name = "basic file with extension\0",
-      .input_path = "/basic/file/test.extension/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple absolute file test 1\0",
+      .input_path       = "/test/\0",
+      .expected_path    = "/test\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/basic/file/test.extension\0" },
-    { .test_name = "multiple slashes file\0",
-      .input_path = "/multiple//slash////file/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple absolute file test 2\0",
+      .input_path       = "/test\0",
+      .expected_path    = "/test\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/multiple/slash/file\0" },
-    { .test_name = "removing ./\0",
-      .input_path = "/home/./user//.//foo/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple file test with extension\0",
+      .input_path       = "/test.extension/\0",
+      .expected_path    = "/test.extension\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/home/user/foo\0" },
-    { .test_name = "Jump up one directory\0",
-      .input_path = "/home/../user//.//foo/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple root\0",
+      .input_path       = "/\0",
+      .expected_path    = "/\0",
+      .input_type       = LIBD_PF_FS_DIRETORY,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/user/foo\0" },
-    { .test_name = "hidden file\0",
-      .input_path = "/home/user/.foo/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple root with two excess slashes\0",
+      .input_path       = "//\0",
+      .expected_path    = "/\0",
+      .input_type       = LIBD_PF_FS_DIRETORY,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/home/user/.foo\0" },
-    { .test_name = "invalid ...\0",
-      .input_path = "/home/.../user/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "simple root with three excess slashes\0",
+      .input_path       = "///\0",
+      .expected_path    = "/\0",
+      .input_type       = LIBD_PF_FS_DIRETORY,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_INVALID_PATH,
-      .expected_path = "\0" },
-    { .test_name = "invalid /..a sequence\0",
-      .input_path = "/home/..a/user/\0",  // TODO::
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "normalizing multiple slashes\0",
+      .input_path       = "/multiple//slash////file/\0",
+      .expected_path    = "/multiple/slash/file\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_INVALID_PATH,
-      .expected_path = "\0" },
-    { .test_name = "invalid a../ sequence\0",
-      .input_path = "/home/a../user/\0",  // TODO::
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "removing ./\0",
+      .input_path       = "/home/./user//.//foo/\0",
+      .expected_path    = "/home/user/foo\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_INVALID_PATH,
-      .expected_path = "\0" },
-    { .test_name = "invalid a-. sequence\0",
-      .input_path = "/home/a-./user/\0",
-      .input_type = LIBD_PF_FS_FILE,
+    },
+    {
+      .test_name        = "Jump up one directory\0",
+      .input_path       = "/home/../user//.//foo/\0",
+      .expected_path    = "/user/foo\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
-      .expected_result = LIBD_PF_FS_INVALID_PATH,
-      .expected_path = "\0" },
+    },
+    {
+      .test_name        = "hidden file\0",
+      .input_path       = "/home/user/.foo/\0",
+      .expected_path    = "/home/user/.foo\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_OK,
+      .input_env_getter = NULL,
+    },
+    {
+      .test_name        = "empty path\0",
+      .input_path       = "\0",
+      .expected_path    = "\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .input_env_getter = NULL,
+    },
+    {
+      .test_name        = "invalid ...\0",
+      .input_path       = "/home/.../user/\0",
+      .expected_path    = "\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .input_env_getter = NULL,
+    },
+    {
+      .test_name        = "invalid /..a sequence\0",
+      .input_path       = "/home/..a/user/\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .input_env_getter = NULL,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .expected_path    = "\0",
+    },
+    {
+      .test_name        = "invalid a../ sequence\0",
+      .input_path       = "/home/a../user/\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .input_env_getter = NULL,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .expected_path    = "\0",
+    },
+    {
+      .test_name        = "invalid a-. sequence\0",
+      .input_path       = "/home/a-./user/\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .input_env_getter = NULL,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .expected_path    = "\0",
+    },
+    {
+      .test_name        = "invalid end *. \0",
+      .input_path       = "/home/user/foo.\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .input_env_getter = NULL,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .expected_path    = "\0",
+    },
+    {
+      .test_name        = "too many walk ups\0",
+      .input_path       = "/home/../../user/../foo\0",
+      .input_type       = LIBD_PF_FS_FILE,
+      .input_env_getter = NULL,
+      .expected_result  = LIBD_PF_FS_INVALID_PATH,
+      .expected_path    = "\0",
+    },
     // Expansion
-    { .test_name = "basic dir expansion\0",
-      .input_path = "$HOME/foo/\0",
-      .input_type = LIBD_PF_FS_DIRETORY,
+    {
+      .test_name        = "basic dir expansion\0",
+      .input_path       = "$HOME/foo/\0",
+      .input_type       = LIBD_PF_FS_DIRETORY,
       .input_env_getter = env_var_getter,
-      .expected_result = LIBD_PF_FS_OK,
-      .expected_path = "/home/user/foo/\0" },
+      .expected_result  = LIBD_PF_FS_OK,
+      .expected_path    = "/home/user/foo/\0",
+    },
   };
 
   size_t nb_params = sizeof(params) / sizeof(struct init_params);
   return cr_make_param_array(struct init_params, params, nb_params, NULL);
 }
 
-ParameterizedTest(struct init_params* params, path, init_env_expansion)
+ParameterizedTest(
+  struct init_params* params,
+  path,
+  init_env_expansion)
 {
   libd_platform_filesystem_path_o* path = malloc(LIBD_PF_FS_PATH_ALLOC_SIZE);
 
   libd_platform_filesystem_result_e result;
   result = libd_platform_filesystem_path_init(
-    path, params->input_path, strlen(params->input_path), params->input_type,
+    path,
+    params->input_path,
+    strlen(params->input_path),
+    params->input_type,
     params->input_env_getter);
 
   cr_assert(
     eq(str, libd_platform_filesystem_path_string(path), params->expected_path),
-    "input=%s\n", params->input_path);
+    "test name='%s'\ninput='%s'\n",
+    params->test_name,
+    params->input_path);
 
   cr_assert(eq(u8, result, params->expected_result), "%s\n", params->test_name);
 }

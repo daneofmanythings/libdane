@@ -1,6 +1,8 @@
+Language: C
+
 DerivePointerAlignment: false
 PointerAlignment: Left
-AlignArrayOfStructures: None
+# AlignArrayOfStructures: Right
 ColumnLimit: 80
 
 IndentWidth: 2
@@ -8,16 +10,48 @@ UseTab: Never
 
 AlwaysBreakAfterReturnType: All
 AllowAllParametersOfDeclarationOnNextLine: false
-BinPackParameters: false
-AlignAfterOpenBracket: Align
+BinPackParameters: AlwaysOnePerLine
+BinPackArguments: false
+BinPackLongBracedList: false
+AlignAfterOpenBracket: AlwaysBreak
 ContinuationIndentWidth: 2
-AllowShortBlocksOnASingleLine: Never
+
 Cpp11BracedListStyle: false
 
 BreakBeforeBraces: Custom 
 BraceWrapping:
   AfterFunction: true
+  # AfterInitializerList: true
+  # SplitEmptyRecord: false
+
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
 
 MaxEmptyLinesToKeep: 1
 SpacesBeforeTrailingComments: 2
 
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossComments: true
+
+AlignConsecutiveDeclarations:
+  Enabled: true
+  AcrossComments: true
+
+AlignConsecutiveMacros:
+  Enabled: true
+
+AlignEscapedNewlines: LeftWithLastLine
+
+AlignOperands: Align
+
+# AllowAllArguementsOnNextLine: false
+#
+# BreakAfterReturnType: true
+
+IncludeBlocks: Regroup
+
+IndentPPDirectives: BeforeHash
+
+RemoveEmptyLinesInUnwrappedLines: true
