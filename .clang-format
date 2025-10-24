@@ -33,7 +33,6 @@ SpacesBeforeTrailingComments: 2
 
 AlignConsecutiveAssignments:
   Enabled: true
-  AcrossComments: true
 
 AlignConsecutiveDeclarations:
   Enabled: true

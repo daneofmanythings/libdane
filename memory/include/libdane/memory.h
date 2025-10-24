@@ -6,6 +6,8 @@
 #ifndef LIBDANE_MEMORY_H
 #define LIBDANE_MEMORY_H
 
+#include "internal/align_compat.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -37,7 +39,7 @@ typedef enum {
 /**
  * @brief Opaque handle for the linear allocator.
  */
-typedef struct libd_memory_linear_allocator_s libd_memory_linear_allocator_s;
+typedef struct libd_memory_linear_allocator_s libd_memory_linear_allocator_o;
 
 /**
  * @brief Opaque handle to a linear allocator checkpoint;
@@ -48,7 +50,12 @@ typedef struct libd_memory_linear_allocator_savepoint_s
 /**
  * @brief Opaque handle for the slab allocator.
  */
-typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_s;
+typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_o;
+
+/**
+ * @brief Opaque handle for the slab allocator.
+ */
+typedef struct libd_memory_slub_allocator_s libd_memory_slub_allocator_o;
 
 /**
  * @brief Alloc allback signature to pass to initializers.
@@ -56,30 +63,21 @@ typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_s;
  * @param2 size Bytes to allocate.
  * @return Pointer to the allocated memory.
  */
-typedef void* (*libd_memory_alloc_callback_f)(void* ctx, size_t size_bytes);
+typedef void* (*libd_memory_alloc_callback_f)(
+  void*  ctx,
+  size_t size_bytes);
 
 /**
  * @brief Free callback function to pass to initializers.
  * @param ctx Allocator context.
  * @param mem_handle Allocator aware handle to the memory to free.
  */
-typedef void (*libd_memory_free_callback_f)(void* ctx, void* mem_handle);
+typedef void (*libd_memory_free_callback_f)(
+  void* ctx,
+  void* mem_handle);
 //==============================================================================
 // Inline Helper Functions
 //==============================================================================
-
-/**
- * @brief Rounds the offset to the nearest given alignment value.
- * @warning alignment must be non-zero.
- * @param offset The value to round from.
- * @param alignment The power of 2 to round to. This parameter MUST be a power
- * of 2.
- */
-static inline size_t
-libd_memory_align_value(size_t offset, uint8_t alignment)
-{
-  return ((offset + alignment - 1) & ~(alignment - 1));
-}
 
 /**
  * @brief Check whether or not the given offset is a power of 2.
@@ -90,6 +88,45 @@ static inline bool
 libd_memory_is_power_of_two(size_t offset)
 {
   return ((offset & (offset - 1)) == 0);
+}
+
+/**
+ * @brief Validates the given alignment. Must be a non-zero power of 2 that
+ * doesn't exceed the max alignment.
+ * @param alignment Value to verify.
+ * @return LIBD_MEM_OK on success, non-zero otherwise.
+ */
+static inline libd_memory_result_e
+libd_memory_is_valid_alignment(uint8_t alignment)
+{
+  if (alignment == 0) {
+    return LIBD_MEM_INVALID_ALIGNMENT;
+  }
+
+  if (!libd_memory_is_power_of_two(alignment) || alignment > LIBD_MAX_ALIGN) {
+    return LIBD_MEM_INVALID_ALIGNMENT;
+  }
+
+  return LIBD_MEM_OK;
+}
+
+/**
+ * @brief Rounds the value to the nearest given alignment value.
+ * @warning alignment must be non-zero.
+ * @param value The value to round from.
+ * @param alignment The power of 2 to round to. This parameter MUST be a power
+ * of 2.
+ */
+static inline size_t
+libd_memory_align_value(
+  size_t  value,
+  uint8_t alignment)
+{
+  if (libd_memory_is_valid_alignment(alignment) != LIBD_MEM_OK) {
+    return LIBD_MEM_INVALID_ALIGNMENT;
+  }
+
+  return ((value + alignment - 1) & ~(alignment - 1));
 }
 
 //==============================================================================
@@ -105,9 +142,9 @@ libd_memory_is_power_of_two(size_t offset)
  */
 libd_memory_result_e
 libd_memory_linear_allocator_create(
-  libd_memory_linear_allocator_s** out_allocator,
-  size_t capacity_bytes,
-  uint8_t alignment);
+  libd_memory_linear_allocator_o** out_allocator,
+  size_t                           capacity_bytes,
+  uint8_t                          alignment);
 
 /**
  * @brief Destroys the allocator.
@@ -116,7 +153,7 @@ libd_memory_linear_allocator_create(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_destroy(
-  libd_memory_linear_allocator_s* p_allocator);
+  libd_memory_linear_allocator_o* p_allocator);
 
 /**
  * @brief Allocates memory in the arena.
@@ -126,9 +163,10 @@ libd_memory_linear_allocator_destroy(
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_linear_allocator_alloc(libd_memory_linear_allocator_s* p_allocator,
-                                   void** out_pointer,
-                                   size_t size_bytes);
+libd_memory_linear_allocator_alloc(
+  libd_memory_linear_allocator_o* p_allocator,
+  void**                          out_pointer,
+  size_t                          size_bytes);
 
 /**
  * @brief Sets a savepoint which can be restored to.
@@ -138,7 +176,7 @@ libd_memory_linear_allocator_alloc(libd_memory_linear_allocator_s* p_allocator,
  */
 libd_memory_result_e
 libd_memory_linear_allocator_set_savepoint(
-  const libd_memory_linear_allocator_s* p_allocator,
+  const libd_memory_linear_allocator_o*     p_allocator,
   libd_memory_linear_allocator_savepoint_s* out_savepoint);
 
 /**
@@ -153,7 +191,7 @@ libd_memory_linear_allocator_set_savepoint(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_restore_savepoint(
-  libd_memory_linear_allocator_s* p_allocator,
+  libd_memory_linear_allocator_o*                 p_allocator,
   const libd_memory_linear_allocator_savepoint_s* p_savepoint);
 
 /**
@@ -162,8 +200,7 @@ libd_memory_linear_allocator_restore_savepoint(
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_linear_allocator_reset(libd_memory_linear_allocator_s* p_allocator);
-
+libd_memory_linear_allocator_reset(libd_memory_linear_allocator_o* p_allocator);
 
 //==============================================================================
 // Slab Allocator API
@@ -182,10 +219,11 @@ libd_memory_linear_allocator_reset(libd_memory_linear_allocator_s* p_allocator);
  * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_slab_allocator_create(libd_memory_slab_allocator_s** out_allocator,
-                                  size_t max_allocations,
-                                  size_t bytes_per_alloc,
-                                  uint8_t alignment);
+libd_memory_slab_allocator_create(
+  libd_memory_slab_allocator_o** out_allocator,
+  size_t                         max_allocations,
+  size_t                         bytes_per_alloc,
+  uint8_t                        alignment);
 
 /**
  * @brief Destroys the allocator.
@@ -193,7 +231,7 @@ libd_memory_slab_allocator_create(libd_memory_slab_allocator_s** out_allocator,
  * @return RESULT_OK on success, error code otherwise
  */
 libd_memory_result_e
-libd_memory_slab_allocator_destroy(libd_memory_slab_allocator_s* p_allocator);
+libd_memory_slab_allocator_destroy(libd_memory_slab_allocator_o* p_allocator);
 
 /**
  * @brief Allocates memory in a free block.
@@ -202,8 +240,9 @@ libd_memory_slab_allocator_destroy(libd_memory_slab_allocator_s* p_allocator);
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_slab_allocator_alloc(libd_memory_slab_allocator_s* p_allocator,
-                                 void** out_pointer);
+libd_memory_slab_allocator_alloc(
+  libd_memory_slab_allocator_o* p_allocator,
+  void**                        out_pointer);
 
 /**
  * @brief Frees the allocation for the given handle.
@@ -212,8 +251,9 @@ libd_memory_slab_allocator_alloc(libd_memory_slab_allocator_s* p_allocator,
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_slab_allocator_free(libd_memory_slab_allocator_s* p_allocator,
-                                void* p_to_free);
+libd_memory_slab_allocator_free(
+  libd_memory_slab_allocator_o* p_allocator,
+  void*                         p_to_free);
 
 /**
  * @brief Resets the slab, freeing all allocations.
@@ -221,6 +261,56 @@ libd_memory_slab_allocator_free(libd_memory_slab_allocator_s* p_allocator,
  * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_slab_allocator_reset(libd_memory_slab_allocator_s* p_allocator);
+libd_memory_slab_allocator_reset(libd_memory_slab_allocator_o* p_allocator);
+
+//==============================================================================
+// Slub Allocator API
+//==============================================================================
+
+/**
+ * @return RESULT_OK on success, error code otherwise
+ */
+libd_memory_result_e
+libd_memory_slub_allocator_create(
+  libd_memory_slub_allocator_o** out_allocator,
+  uint32_t                       max_allocations,
+  uint32_t                       bytes_per_alloc,
+  uint8_t                        alignment);
+
+/**
+ * @return RESULT_OK on success, error code otherwise
+ */
+libd_memory_result_e
+libd_memory_slub_allocator_destroy(libd_memory_slub_allocator_o* p_allocator);
+
+/**
+ * @brief Allocates memory in a free block.
+ * @param p_allocator Handle for the allocator.
+ * @param out_pointer Out parameter for the pointer to the allocation.
+ * @return RESULT_OK on success, error code otherwise.
+ */
+libd_memory_result_e
+libd_memory_slub_allocator_alloc(
+  libd_memory_slub_allocator_o* p_allocator,
+  void**                        out_pointer);
+
+/**
+ * @brief Frees the allocation for the given handle.
+ * @param p_allocator Handle for the allocator.
+ * @param p_to_free Handle for the allocation to free.
+ * @return RESULT_OK on success, error code otherwise.
+ */
+libd_memory_result_e
+libd_memory_slub_allocator_free(
+  libd_memory_slub_allocator_o* p_allocator,
+  void*                         p_to_free);
+
+/**
+ * @brief Resets the slub, freeing all allocations.
+ * @param p_allocator Handle for the allocator.
+ * @return RESULT_OK on success, non-zero otherwise.
+ */
+libd_memory_result_e
+libd_memory_slub_allocator_reset(libd_memory_slub_allocator_o* p_allocator);
 
 #endif  // LIBDANE_MEMORY_H
