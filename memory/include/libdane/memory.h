@@ -27,6 +27,7 @@ typedef enum {
   LIBD_MEM_INVALID_NULL_PARAMETER, /**< A NULL pointer parameter was detected */
   LIBD_MEM_INVALID_POINTER, /**< An invalid pointer parameter was detected */
   LIBD_MEM_INVALID_ZERO_PARAMETER, /**< An invalid zero value as a parameter */
+  LIBD_MEM_INIT_FAILURE,
   LIBD_MEM_INVALID_FREE,   /**< Tried to free memory from an arena that has no
                          allocations */
   LIBD_MEM_RESULT_E_COUNT, /**< Count of result states */
@@ -50,12 +51,7 @@ typedef struct libd_memory_linear_allocator_savepoint_s
 /**
  * @brief Opaque handle for the slab allocator.
  */
-typedef struct libd_memory_slab_allocator_s libd_memory_slab_allocator_o;
-
-/**
- * @brief Opaque handle for the slab allocator.
- */
-typedef struct libd_memory_slub_allocator_s libd_memory_slub_allocator_o;
+typedef struct libd_memory_pool_allocator_s libd_memory_pool_allocator_o;
 
 /**
  * @brief Alloc allback signature to pass to initializers.
@@ -119,14 +115,14 @@ libd_memory_is_valid_alignment(uint8_t alignment)
  */
 static inline size_t
 libd_memory_align_value(
-  size_t  value,
-  uint8_t alignment)
+  uintptr_t value,
+  uint8_t   alignment)
 {
   if (libd_memory_is_valid_alignment(alignment) != LIBD_MEM_OK) {
     return LIBD_MEM_INVALID_ALIGNMENT;
   }
 
-  return ((value + alignment - 1) & ~(alignment - 1));
+  return ((value + alignment - 1) & ~(uintptr_t)(alignment - 1));
 }
 
 //==============================================================================
@@ -203,76 +199,15 @@ libd_memory_result_e
 libd_memory_linear_allocator_reset(libd_memory_linear_allocator_o* p_allocator);
 
 //==============================================================================
-// Slab Allocator API
-//==============================================================================
-
-/**
- * @brief Handles a fixed size/alignment allocations and supports freeing of
- * individual allocations. Simple implementation with no regard for page sizing
- * optimizations.
- * @warning The free list is handled as an embedded ring buffer with capacity
- * equal to the capacity of the allocator. The footprint may be large. There is
- * no algorithm to address possible fragmentation of the slab.
- * @param out_allocator Out parameter for the allocator.
- * @param max_allocations Maximum number of allocations.
- * @param bytes_per_alloc Size, in bytes, per allocation.
- * @return RESULT_OK on success, non-zero otherwise.
- */
-libd_memory_result_e
-libd_memory_slab_allocator_create(
-  libd_memory_slab_allocator_o** out_allocator,
-  size_t                         max_allocations,
-  size_t                         bytes_per_alloc,
-  uint8_t                        alignment);
-
-/**
- * @brief Destroys the allocator.
- * @param p_allocator Handle for the allocator.
- * @return RESULT_OK on success, error code otherwise
- */
-libd_memory_result_e
-libd_memory_slab_allocator_destroy(libd_memory_slab_allocator_o* p_allocator);
-
-/**
- * @brief Allocates memory in a free block.
- * @param p_allocator Handle for the allocator.
- * @param out_pointer Out parameter for the pointer to the allocation.
- * @return RESULT_OK on success, error code otherwise.
- */
-libd_memory_result_e
-libd_memory_slab_allocator_alloc(
-  libd_memory_slab_allocator_o* p_allocator,
-  void**                        out_pointer);
-
-/**
- * @brief Frees the allocation for the given handle.
- * @param p_allocator Handle for the allocator.
- * @param p_to_free Handle for the allocation to free.
- * @return RESULT_OK on success, error code otherwise.
- */
-libd_memory_result_e
-libd_memory_slab_allocator_free(
-  libd_memory_slab_allocator_o* p_allocator,
-  void*                         p_to_free);
-
-/**
- * @brief Resets the slab, freeing all allocations.
- * @param p_allocator Handle for the allocator.
- * @return RESULT_OK on success, non-zero otherwise.
- */
-libd_memory_result_e
-libd_memory_slab_allocator_reset(libd_memory_slab_allocator_o* p_allocator);
-
-//==============================================================================
-// Slub Allocator API
+// Pool Allocator API
 //==============================================================================
 
 /**
  * @return RESULT_OK on success, error code otherwise
  */
 libd_memory_result_e
-libd_memory_slub_allocator_create(
-  libd_memory_slub_allocator_o** out_allocator,
+libd_memory_pool_allocator_create(
+  libd_memory_pool_allocator_o** out_allocator,
   uint32_t                       max_allocations,
   uint32_t                       bytes_per_alloc,
   uint8_t                        alignment);
@@ -281,7 +216,7 @@ libd_memory_slub_allocator_create(
  * @return RESULT_OK on success, error code otherwise
  */
 libd_memory_result_e
-libd_memory_slub_allocator_destroy(libd_memory_slub_allocator_o* p_allocator);
+libd_memory_pool_allocator_destroy(libd_memory_pool_allocator_o* p_allocator);
 
 /**
  * @brief Allocates memory in a free block.
@@ -290,8 +225,8 @@ libd_memory_slub_allocator_destroy(libd_memory_slub_allocator_o* p_allocator);
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_slub_allocator_alloc(
-  libd_memory_slub_allocator_o* p_allocator,
+libd_memory_pool_allocator_alloc(
+  libd_memory_pool_allocator_o* p_allocator,
   void**                        out_pointer);
 
 /**
@@ -301,16 +236,16 @@ libd_memory_slub_allocator_alloc(
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_slub_allocator_free(
-  libd_memory_slub_allocator_o* p_allocator,
+libd_memory_pool_allocator_free(
+  libd_memory_pool_allocator_o* p_allocator,
   void*                         p_to_free);
 
 /**
- * @brief Resets the slub, freeing all allocations.
+ * @brief Resets the pool, freeing all allocations.
  * @param p_allocator Handle for the allocator.
  * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_slub_allocator_reset(libd_memory_slub_allocator_o* p_allocator);
+libd_memory_pool_allocator_reset(libd_memory_pool_allocator_o* p_allocator);
 
 #endif  // LIBDANE_MEMORY_H
