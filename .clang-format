@@ -34,9 +34,9 @@ SpacesBeforeTrailingComments: 2
 AlignConsecutiveAssignments:
   Enabled: true
 
-AlignConsecutiveDeclarations:
-  Enabled: true
-  AcrossComments: true
+# AlignConsecutiveDeclarations:
+#   Enabled: true
+#   AcrossComments: true
 
 AlignConsecutiveMacros:
   Enabled: true

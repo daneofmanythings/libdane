@@ -20,17 +20,18 @@
  * @brief Result codes for memory operations.
  */
 typedef enum {
-  LIBD_MEM_OK,                     /**< Operation successful */
-  LIBD_MEM_NO_MEMORY,              /**< No memory for the operation */
-  LIBD_MEM_NOT_IMPLEMENTED,        /**< Functionality not yet implemented */
-  LIBD_MEM_INVALID_ALIGNMENT,      /**< An invalid alignment value was given */
-  LIBD_MEM_INVALID_NULL_PARAMETER, /**< A NULL pointer parameter was detected */
-  LIBD_MEM_INVALID_POINTER, /**< An invalid pointer parameter was detected */
-  LIBD_MEM_INVALID_ZERO_PARAMETER, /**< An invalid zero value as a parameter */
-  LIBD_MEM_INIT_FAILURE,
-  LIBD_MEM_INVALID_FREE,   /**< Tried to free memory from an arena that has no
+  libd_mem_ok,                     /**< Operation successful */
+  libd_mem_no_memory,              /**< No memory for the operation */
+  libd_mem_not_implemented,        /**< Functionality not yet implemented */
+  libd_mem_invalid_alignment,      /**< An invalid alignment value was given */
+  libd_mem_invalid_null_parameter, /**< A NULL pointer parameter was detected */
+  libd_mem_invalid_pointer, /**< An invalid pointer parameter was detected */
+  libd_mem_invalid_zero_parameter, /**< An invalid zero value as a parameter */
+  libd_mem_init_failure,
+  libd_mem_index_must_be_unsigned,
+  libd_mem_invalid_free,   /**< Tried to free memory from an arena that has no
                          allocations */
-  LIBD_MEM_RESULT_E_COUNT, /**< Count of result states */
+  libd_mem_result_e_count, /**< Count of result states */
 } libd_memory_result_e;
 
 //==============================================================================
@@ -96,14 +97,14 @@ static inline libd_memory_result_e
 libd_memory_is_valid_alignment(uint8_t alignment)
 {
   if (alignment == 0) {
-    return LIBD_MEM_INVALID_ALIGNMENT;
+    return libd_mem_invalid_alignment;
   }
 
   if (!libd_memory_is_power_of_two(alignment) || alignment > LIBD_MAX_ALIGN) {
-    return LIBD_MEM_INVALID_ALIGNMENT;
+    return libd_mem_invalid_alignment;
   }
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }
 
 /**
@@ -118,8 +119,8 @@ libd_memory_align_value(
   uintptr_t value,
   uint8_t   alignment)
 {
-  if (libd_memory_is_valid_alignment(alignment) != LIBD_MEM_OK) {
-    return LIBD_MEM_INVALID_ALIGNMENT;
+  if (libd_memory_is_valid_alignment(alignment) != libd_mem_ok) {
+    return libd_mem_invalid_alignment;
   }
 
   return ((value + alignment - 1) & ~(uintptr_t)(alignment - 1));

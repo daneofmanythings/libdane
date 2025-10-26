@@ -25,14 +25,14 @@ libd_memory_linear_allocator_create(
   uint8_t            alignment)
 {
   if (out_allocator == NULL) {
-    return LIBD_MEM_INVALID_NULL_PARAMETER;
+    return libd_mem_invalid_null_parameter;
   }
   if (capacity_bytes == 0) {
-    return LIBD_MEM_INVALID_ZERO_PARAMETER;
+    return libd_mem_invalid_zero_parameter;
   }
 
   libd_memory_result_e result = libd_memory_is_valid_alignment(alignment);
-  if (result != LIBD_MEM_OK) {
+  if (result != libd_mem_ok) {
     return result;
   }
 
@@ -41,7 +41,7 @@ libd_memory_linear_allocator_create(
 
   linear_allocator* p_allocator = malloc(allocation_size);
   if (p_allocator == NULL) {
-    return LIBD_MEM_NO_MEMORY;
+    return libd_mem_no_memory;
   }
 
   p_allocator->capacity    = capacity_bytes;
@@ -50,19 +50,19 @@ libd_memory_linear_allocator_create(
 
   *out_allocator = p_allocator;
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }
 
 libd_memory_result_e
 libd_memory_linear_allocator_destroy(linear_allocator* p_allocator)
 {
   if (p_allocator == NULL) {
-    return LIBD_MEM_INVALID_NULL_PARAMETER;
+    return libd_mem_invalid_null_parameter;
   }
 
   free(p_allocator);
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }
 
 libd_memory_result_e
@@ -72,17 +72,17 @@ libd_memory_linear_allocator_alloc(
   size_t            size)
 {
   if (p_allocator == NULL || out_pointer == NULL) {
-    return LIBD_MEM_INVALID_NULL_PARAMETER;
+    return libd_mem_invalid_null_parameter;
   }
   if (p_allocator->capacity < p_allocator->bytes_index + size) {
-    return LIBD_MEM_NO_MEMORY;
+    return libd_mem_no_memory;
   }
 
   // This state should not be possible.
   size_t aligned_index =
     libd_memory_align_value(p_allocator->bytes_index, p_allocator->alignment);
   if (aligned_index != p_allocator->bytes_index) {
-    return LIBD_MEM_INVALID_ALIGNMENT;
+    return libd_mem_invalid_alignment;
   }
   // -----
 
@@ -90,7 +90,7 @@ libd_memory_linear_allocator_alloc(
   p_allocator->bytes_index +=
     libd_memory_align_value(size, p_allocator->alignment);
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }
 
 libd_memory_result_e
@@ -99,12 +99,12 @@ libd_memory_linear_allocator_set_savepoint(
   savepoint*              out_savepoint)
 {
   if (p_allocator == NULL || out_savepoint == NULL) {
-    return LIBD_MEM_INVALID_NULL_PARAMETER;
+    return libd_mem_invalid_null_parameter;
   }
 
   *out_savepoint = (savepoint_s){ .bytes_index = p_allocator->bytes_index };
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }
 
 libd_memory_result_e
@@ -113,22 +113,22 @@ libd_memory_linear_allocator_restore_savepoint(
   const savepoint*  p_savepoint)
 {
   if (p_allocator == NULL || p_savepoint == NULL) {
-    return LIBD_MEM_INVALID_NULL_PARAMETER;
+    return libd_mem_invalid_null_parameter;
   }
 
   p_allocator->bytes_index = p_savepoint->bytes_index;
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }
 
 libd_memory_result_e
 libd_memory_linear_allocator_reset(linear_allocator* p_allocator)
 {
   if (p_allocator == NULL) {
-    return LIBD_MEM_INVALID_NULL_PARAMETER;
+    return libd_mem_invalid_null_parameter;
   }
 
   p_allocator->bytes_index = 0;
 
-  return LIBD_MEM_OK;
+  return libd_mem_ok;
 }

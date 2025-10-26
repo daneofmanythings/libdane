@@ -4,6 +4,7 @@
 #include <linux/limits.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,24 +14,24 @@
 
 struct libd_platform_filesystem_path_s {
   size_t length;
-  char   path[PATH_BUFFER_MAX];
+  char path[PATH_BUFFER_MAX];
 };
 
-typedef libd_platform_filesystem_result_e     result_e;
-typedef libd_platform_filesystem_path_o       path_o;
-typedef libd_platform_filetype_path_type_e    path_type_e;
+typedef libd_platform_filesystem_result_e result_e;
+typedef libd_platform_filesystem_path_o path_o;
+typedef libd_platform_filetype_path_type_e path_type_e;
 typedef libd_platform_filesystem_env_getter_f env_getter_f;
 
 result_e
 _expand_path_env_variables(
-  char         dest[WORK_BUFFER_MAX],
-  const char*  path,
+  char dest[WORK_BUFFER_MAX],
+  const char* path,
   env_getter_f env_getter);
 
 result_e
 _normalize_path_string(
-  char        dest_path[WORK_BUFFER_MAX],
-  const char  src_path[WORK_BUFFER_MAX],
+  char dest_path[WORK_BUFFER_MAX],
+  const char src_path[WORK_BUFFER_MAX],
   path_type_e path_type);
 
 static inline bool
@@ -38,7 +39,7 @@ _is_valid_portable_path_char(const char c);
 
 libd_platform_filesystem_result_e
 _rewind_one_directory(
-  char*       writer,
+  char* writer,
   const char* dest,
   const char* current,
   const char* peek);
@@ -52,14 +53,14 @@ _is_path_directory(libd_platform_filetype_path_type_e path_type);
 static inline char*
 _find_char_or_end(
   char* s,
-  char  c);
+  char c);
 
 result_e
 libd_platform_filesystem_path_init(
-  path_o*      out_path,
-  const char*  raw_path,
-  size_t       raw_path_length_bytes,
-  path_type_e  type,
+  path_o* out_path,
+  const char* raw_path,
+  size_t raw_path_length_bytes,
+  path_type_e type,
   env_getter_f env_getter)
 {
   if (out_path == NULL || raw_path == NULL) {
@@ -94,8 +95,8 @@ libd_platform_filesystem_path_init(
 
 result_e
 _expand_path_env_variables(
-  char         dest[WORK_BUFFER_MAX],
-  const char*  path,
+  char dest[WORK_BUFFER_MAX],
+  const char* path,
   env_getter_f env_getter)
 {
   // user declared no environment variables in this path
@@ -114,7 +115,7 @@ _expand_path_env_variables(
     return LIBD_PF_FS_PATH_TOO_LONG;
   }
 
-  size_t  num_chars_copied         = 0;
+  size_t num_chars_copied          = 0;
   uint8_t infinite_loop_protection = 0;
   uint8_t loop_max                 = 55;
 
@@ -123,8 +124,8 @@ _expand_path_env_variables(
   char* env_end   = NULL;
 
   // buffers where inspection and building of new paths happen
-  char  inspect_buffer[WORK_BUFFER_MAX];
-  char  build_buffer[WORK_BUFFER_MAX];
+  char inspect_buffer[WORK_BUFFER_MAX];
+  char build_buffer[WORK_BUFFER_MAX];
   char* inspect = inspect_buffer;
   char* build   = build_buffer;
   char* temp;  // used for switching
@@ -191,63 +192,137 @@ _expand_path_env_variables(
   return LIBD_PF_FS_OK;
 }
 
+#define SCANNER_PARAM   scanner
+#define SCAN            (*(SCANNER_PARAM.peek))
+#define JUST_SCANNED(c) ((*(SCANNER_PARAM.peek - 1)) == (c))
+#define NOW_SCANNING(c) ((*SCANNER_PARAM.peek) == (c))
+#define WILL_SCAN(c)    ((*(SCANNER_PARAM.peek + 1)) == (c))
+typedef struct {
+  const char* current;
+  const char* peek;
+} path_scanner;
+void
+_path_scanner_init(
+  path_scanner* out_scanner,
+  const char* src);
+void
+_path_scanner_jump(
+  path_scanner* scanner,
+  uintptr_t val);
+void
+_path_scanner_jump_sync(
+  path_scanner* scanner,
+  uintptr_t val);
+
+static inline char
+_scan(
+  path_scanner* scanner,
+  size_t offset);
+static inline bool
+_scan_is(
+  path_scanner* scanner,
+  int64_t offset,
+  char c);
+
+typedef struct {
+  uint16_t write_width;
+  bool is_directory;
+} write_record;
+typedef struct {
+  char* head;
+  char* dest;
+  uint16_t write_records_current_index;
+  write_record write_records[PATH_BUFFER_MAX];
+} path_writer;
+void
+_path_writer_init(
+  path_writer* out_writer,
+  char* dest);
+int
+_path_writer_rewind(path_writer* writer);
+bool
+_path_writer_previous_is_dir(path_writer* writer);
+void
+_path_writer_write_from_scanner(
+  path_writer* writer,
+  path_scanner* scanner,
+  bool is_dir_or_file);
+void
+_path_writer_write_parent_jump_from_scanner(
+  path_writer* writer,
+  path_scanner* scanner);
+void
+_path_writer_normalize_directory_ending(path_writer* writer);
+void
+_path_writer_normalize_file_ending(path_writer* writer);
+void
+_path_writer_normalize_path_ending(
+  path_writer* writer,
+  path_type_e path_type);
+
+int
+_path_scanner_writer_rewind_directory(
+  path_scanner* scanner,
+  path_writer* writer);
+void
+_path_scanner_writer_normalize_path_beginning(
+  path_writer* writer,
+  path_scanner* scanner);
+
 result_e
 _normalize_path_string(
-  char        dest[WORK_BUFFER_MAX],
-  const char  src[WORK_BUFFER_MAX],
+  char dest[WORK_BUFFER_MAX],
+  const char src[WORK_BUFFER_MAX],
   path_type_e path_type)
 {
   if (*src == '\0') {
     return LIBD_PF_FS_INVALID_PATH;
   }
-  if ((path_type & (path_type - 1)) != 0) {
-    return LIBD_PF_FS_INVALID_PATH_TYPE;
-  }
 
-  const char* current = src;
-  const char* peek    = current + 1;  // always 1+ ahead of current
-  char*       writer  = dest;
+  path_scanner s = {};
+  _path_scanner_init(&s, src);
+  path_writer w = {};
+  _path_writer_init(&w, dest);
+
+  _path_scanner_writer_normalize_path_beginning(&w, &s);
 
   libd_platform_filesystem_result_e result;
-
-  while (*peek != '\0') {
+  while (!_scan_is(&s, 0, '\0')) {
     // Enforcing strict character policy
-    if (!_is_valid_portable_path_char(*peek)) {
+    if (!_is_valid_portable_path_char(*s.peek)) {
       return LIBD_PF_FS_INVALID_PATH;
     }
 
-    // Special case '../' depends on rel/abs and prevous writes.
-    if (*peek == '.' && *(peek - 1) == '.' && *(peek + 1) == '/') {
-      // Absolute case always attempts to walk up a directory.
-      if (_is_path_absolute(path_type)) {
-        result = _rewind_one_directory(writer, dest, current, peek);
-        if (result != LIBD_PF_FS_OK) {
-          return result;
-        }
-        // Relative case writes '../' if there isn't a written directory.
-      } else {
-        if (no_written_directory) {
-          // write out the '../'
-        } else {
-          _rewind_one_directory(writer, dest, current, peek);
+    // peeking a '.' is a hotspot.
+    if (_scan_is(&s, 0, '.')) {
+      // found a dotdot
+      if (_scan_is(&s, -1, '.') && _scan_is(&s, 1, '/')) {
+        if (_is_path_absolute(path_type)) {  // this always attemps a rewind
+          if (_path_scanner_writer_rewind_directory(&s, &w) != 0) {
+            return LIBD_PF_FS_INVALID_PATH;  // fails if out of bounds attempted
+          }
+        } else {  // relative branch
+          if (_path_writer_previous_is_dir(&w)) {
+            // cannot fail because parent is a directory
+            _path_scanner_writer_rewind_directory(&s, &w);
+          } else {  // write out the dotdot
+            _path_writer_write_parent_jump_from_scanner(&w, &s);
+            continue;
+          }
         }
       }
-    }
-
-    // there are many cases where '.' leads to invalid path names
-    if (*peek == '.') {
       // semantically meaningless path naming. enforced convention.
       if (
-        *(peek - 1) == '-' || *(peek + 1) == '-' || *(peek - 1) == '_' ||
-        *(peek + 1) == '_') {
+        JUST_SCANNED('-') || WILL_SCAN('-') || JUST_SCANNED('_') ||
+        WILL_SCAN('_')) {
         return LIBD_PF_FS_INVALID_PATH;
       }
       // name ends with a '.'
-      if (isalnum(*(peek - 1)) && *(peek + 1) == '/') {
+      if (isalnum(SCAN) && WILL_SCAN('/')) {
         return LIBD_PF_FS_INVALID_PATH;
       }
       // '/.*' malformation
-      if (*(peek - 1) == '/' && *(peek + 1) == '.' && *(peek + 2) != '/') {
+      if (JUST_SCANNED('/') && WILL_SCAN('.') && *(peek + 2) != '/') {
         return LIBD_PF_FS_INVALID_PATH;
       }
       // '<alnum>.*' malformation
@@ -260,13 +335,12 @@ _normalize_path_string(
       }
       // skipping "/./"
       if (*(peek - 1) == '/' && *(peek + 1) == '/') {
-        peek += 2;
-        current = peek - 1;
+        _path_scanner_jump_sync(&s, 1);
       }
     }
 
     // enforced convention for tidy naming.
-    if (*(peek) == '-' || *(peek) == '_') {
+    if (NOW_SCANNING('-') || NOW_SCANNING('_')) {
       // '-' and '_' should be used as word separators only.
       if (!isalnum(*(peek - 1)) || !isalnum(*(peek + 1))) {
         return LIBD_PF_FS_INVALID_PATH;
@@ -276,34 +350,17 @@ _normalize_path_string(
     // potential write point has been hit. Skips past multiple '/'
     if (*peek == '/') {
       if (*(peek - 1) != '/') {
-        memcpy(writer, current, peek - current);
-        writer  = writer + (peek - current);
-        *writer = '\0';
+        _path_writer_write_from_scanner(&w, &s, true);
       }
-      current = peek;
+      s.current = s.peek;
     }
-    peek += 1;
+    s.peek += 1;
   }
 
-  // flushes the remaining write to the dest buffer
-  memcpy(writer, current, peek - current);
+  // write out the remaining path segment.
+  _path_writer_write_from_scanner(&w, &s, true);
 
-  // advancing the writer for normalizing the end of the path.
-  writer = writer + (peek - current);
-
-  // Normalizing the end of the path.
-  if (_is_path_directory(path_type)) {
-    if (*(writer - 1) != '/') {  // directory must end with '/'
-      *(writer)     = '/';
-      *(writer + 1) = '\0';
-    }
-  } else {
-    if (*(writer - 1) == '/') {  // file must not end with '/'
-      *(writer - 1) = '\0';
-    } else {
-      *writer = '\0';
-    }
-  }
+  _path_writer_normalize_path_ending(&w);
 
   return LIBD_PF_FS_OK;
 }
@@ -317,7 +374,7 @@ libd_platform_filesystem_path_string(libd_platform_filesystem_path_o* path)
 static inline char*
 _find_char_or_end(
   char* s,
-  char  c)
+  char c)
 {
   while (*s && *s != c) {
     s++;
@@ -333,7 +390,7 @@ _is_valid_portable_path_char(const char c)
 
 libd_platform_filesystem_result_e
 _rewind_one_directory(
-  char*       writer,
+  char* writer,
   const char* dest,
   const char* current,
   const char* peek)
@@ -362,4 +419,171 @@ static inline bool
 _is_path_directory(libd_platform_filetype_path_type_e path_type)
 {
   return (path_type & LIBD_PF_FS_IS_DIR) == 1;
+}
+
+void
+_path_writer_init(
+  path_writer* out_writer,
+  char* dest)
+{
+  out_writer->head                          = dest;
+  out_writer->dest                          = dest;
+  out_writer->write_records_current_index   = 0;
+  out_writer->write_records[0].write_width  = 0;
+  out_writer->write_records[0].is_directory = false;
+}
+
+int
+_path_writer_rewind(path_writer* writer)
+{
+  if (writer->write_records_current_index == 0) {
+    return -1;
+  }
+  // moving back the head
+  writer->head -=
+    writer->write_records[writer->write_records_current_index - 1].write_width;
+  writer->write_records_current_index -= 1;
+}
+
+bool
+_path_writer_previous_is_dir(path_writer* writer)
+{
+  if (writer->write_records_current_index == 0) {
+    return false;
+  }
+
+  if (writer->write_records[writer->write_records_current_index].is_directory) {
+    return true;
+  }
+
+  return false;
+}
+
+void
+_path_writer_write_from_scanner(
+  path_writer* writer,
+  path_scanner* scanner,
+  bool is_dir_or_file)
+{
+  uintptr_t length = scanner->peek - scanner->current;
+
+  memcpy(writer->head, scanner->current, length);
+
+  // updating writer state;
+  writer->head += length;
+  writer->write_records[writer->write_records_current_index].write_width =
+    length;
+  writer->write_records[writer->write_records_current_index].is_directory =
+    is_dir_or_file;
+  writer->write_records_current_index += 1;
+}
+
+void
+_path_writer_write_parent_jump_from_scanner(
+  path_writer* writer,
+  path_scanner* scanner)
+{
+  peek += 1;
+  _path_writer_write_from_scanner(writer, scanner, false);
+  _path_scanner_jump_sync(scanner, 1);
+}
+
+void
+_path_scanner_writer_normalize_path_beginning(
+  path_writer* writer,
+  path_scanner* scanner)
+{
+  // Normalizing the beginning of the path.
+  if (_is_path_absolute(path_type) && src[0] != '/') {
+    // bespoke operation for this condition.
+    *writer->head = '/';
+    writer->head += 1;
+    writer->dest += 1;
+  } else if (!_is_path_absolute(path_type) && src[0] == '/') {
+    // or advance current and peek if relative with a '/'
+    _path_scanner_jump_sync(&scanner, 1);
+  }
+}
+
+void
+_path_writer_normalize_directory_ending(path_writer* writer)
+{
+  if (*(writer->head - 1) != '/') {  // directory must end with '/'
+    *(writer->head)     = '/';
+    *(writer->head + 1) = '\0';
+  }
+}
+void
+_path_writer_normalize_file_ending(path_writer* writer)
+{
+  if (*(writer->head - 1) == '/') {  // file must not end with '/'
+    *(writer->head - 1) = '\0';
+  } else {
+    *writer->head = '\0';
+  }
+}
+void
+_path_writer_normalize_path_ending(
+  path_writer* writer,
+  path_type_e path_type)
+{
+  if (_is_path_directory(path_type)) {
+    _path_writer_normalize_directory_ending(writer);
+  } else {
+    _path_writer_normalize_file_ending(writer);
+  }
+}
+
+void
+_path_scanner_init(
+  path_scanner* out_scanner,
+  const char* src)
+{
+  out_scanner->current = src;
+  out_scanner_.peek    = current + 1;  // always 1+ ahead of current
+}
+void
+_path_scanner_jump(
+  path_scanner* scanner,
+  uintptr_t val)
+{
+  //
+}
+
+void
+_path_scanner_jump_sync(
+  path_scanner* scanner,
+  uintptr_t val)
+{
+  scanner->peek += val;
+  scanner->current = peek - 1;
+}
+
+int
+_path_scanner_writer_rewind_directory(
+  path_scanner* scanner,
+  path_writer* writer)
+{
+  // rewind the writer.
+  if (_path_writer_rewind(&writer) != 0) {  // will fail if out of bounds
+    return return -1;
+  }
+  // align the scanner past the '../'
+  _path_scanner_jump_sync(&scanner, 2);
+}
+
+static inline char
+_scan(
+  path_scanner* scanner,
+  size_t offset)
+{
+  return *(scanner->peek + offset);
+}
+static inline bool
+_scan_is(
+  path_scanner* scanner,
+  int64_t offset,
+  char c)
+{
+  return _scan(scanner, offset) == c;
 }
