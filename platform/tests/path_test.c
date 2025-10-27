@@ -21,8 +21,8 @@ struct init_params {
   const char input_path[64];
   const char expected_path[64];
 
-  libd_platform_filetype_path_type_e input_type;
-  libd_platform_filesystem_result_e  expected_result;
+  libd_platform_filesystem_path_type_e input_type;
+  libd_platform_filesystem_result_e expected_result;
 
   const char* (*input_env_getter)(const char*);
 };
@@ -97,8 +97,8 @@ ParameterizedTestParameters(
       .input_env_getter = NULL,
     },
     {
-      .test_name        = "normalizing multiple slashes\0",
-      .input_path       = "/multiple//slash////file/\0",
+      .test_name        = "normalizing excess slashes\0",
+      .input_path       = "//multiple///slash////file//////\0",
       .expected_path    = "/multiple/slash/file\0",
       .input_type       = LIBD_PF_FS_ABS_FILE,
       .expected_result  = LIBD_PF_FS_OK,
@@ -106,15 +106,15 @@ ParameterizedTestParameters(
     },
     {
       .test_name        = "removing ./\0",
-      .input_path       = "/home/./user//.//foo/\0",
-      .expected_path    = "/home/user/foo\0",
+      .input_path       = "/home/./user/.//foo//./bar//.///baz\0",
+      .expected_path    = "/home/user/foo/bar/baz/\0",
       .input_type       = LIBD_PF_FS_ABS_FILE,
       .expected_result  = LIBD_PF_FS_OK,
       .input_env_getter = NULL,
     },
     {
       .test_name        = "Jump up one directory\0",
-      .input_path       = "/home/../user//.//foo/\0",
+      .input_path       = "/home/../user/foo/\0",
       .expected_path    = "/user/foo\0",
       .input_type       = LIBD_PF_FS_ABS_FILE,
       .expected_result  = LIBD_PF_FS_OK,
@@ -132,7 +132,7 @@ ParameterizedTestParameters(
       .test_name        = "empty path\0",
       .input_path       = "\0",
       .expected_path    = "\0",
-      .input_type       = LIBD_PF_FS_REL_FILE,
+      .input_type       = libd_pf_fs_rel_file,
       .expected_result  = LIBD_PF_FS_INVALID_PATH,
       .input_env_getter = NULL,
     },
@@ -208,11 +208,7 @@ ParameterizedTest(
 
   libd_platform_filesystem_result_e result;
   result = libd_platform_filesystem_path_init(
-    path,
-    params->input_path,
-    strlen(params->input_path),
-    params->input_type,
-    params->input_env_getter);
+    path, params->input_path, params->input_type, params->input_env_getter);
 
   cr_assert(
     eq(str, libd_platform_filesystem_path_string(path), params->expected_path),

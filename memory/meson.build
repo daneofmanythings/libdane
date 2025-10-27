@@ -9,7 +9,7 @@ memory_sources = files(
 if host_system in system_posix
   memory_sources += files(
     'src/linear_allocator.c',
-    'src/slab_allocator.c',
+    'src/pool_allocator.c',
   )
 else
   error('Unsupported platform: ' + host_system)
@@ -42,7 +42,7 @@ libd_memory_dep = declare_dependency(
 if build_tests
   test_sources = files(
     'tests/linear_allocator_test.c',
-    'tests/slab_allocator_test.c',
+    'tests/pool_allocator_test.c',
   )
 
   memory_test = executable('test_memory',
@@ -53,7 +53,7 @@ if build_tests
     ],
   )
 
-  args = ['--verbose']
+  args = []
   
   test('memory tests', memory_test, args: args)
 endif

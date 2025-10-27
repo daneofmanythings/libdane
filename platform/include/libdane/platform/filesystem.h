@@ -18,17 +18,17 @@
  * @brief The result codes used by this library.
  */
 typedef enum {
-  LIBD_PF_FS_OK, /**< Operation successful */
-  LIBD_PF_FS_NO_MEMORY,
-  LIBD_PF_FS_NULL_PARAMETER,
-  LIBD_PF_FS_INVALID_PATH, /**< The path provided is invalid */
-  LIBD_PF_FS_PATH_TOO_LONG,
-  LIBD_PF_FS_EMPTY_PATH,
-  LIBD_PF_FS_INVALID_PATH_TYPE,
-  LIBD_PF_FS_PATH_OUT_OF_BOUNDS,
-  LIBD_PF_FS_PATH_ENV_VAR_NOT_FOUND,
-  LIBD_PF_FS_TOO_MANY_ENV_EXPANSIONS,
-  LIBD_PLATFORM_FILESYSTEM_RESULT_E_COUNT, /**< The number of result codes */
+  libd_pf_fs_ok, /**< Operation successful */
+  libd_pf_fs_no_memory,
+  libd_pf_fs_null_parameter,
+  libd_pf_fs_invalid_path, /**< The path provided is invalid */
+  libd_pf_fs_path_too_long,
+  libd_pf_fs_empty_path,
+  libd_pf_fs_invalid_path_type,
+  libd_pf_fs_path_out_of_bounds,
+  libd_pf_fs_path_env_var_not_found,
+  libd_pf_fs_too_many_env_expansions,
+  libd_platform_filesystem_result_e_count, /**< The number of result codes */
 } libd_platform_filesystem_result_e;
 
 //==============================================================================
@@ -54,11 +54,11 @@ typedef const char* (*libd_platform_filesystem_env_getter_f)(const char* key);
  * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
  */
 typedef enum {
-  LIBD_PF_FS_REL_FILE     = 0,  // 0b0000
-  LIBD_PF_FS_ABS_FILE     = 1,  // 0b0001
-  LIBD_PF_FS_REL_DIRETORY = 2,  // 0b0010
-  LIBD_PF_FS_ABS_DIRETORY = 3,  // 0b0011
-} libd_platform_filetype_path_type_e;
+  libd_pf_fs_rel_file     = 0,  // 0b0000
+  libd_pf_fs_abs_file     = 1,  // 0b0001
+  libd_pf_fs_rel_diretory = 2,  // 0b0010
+  libd_pf_fs_abs_diretory = 3,  // 0b0011
+} libd_platform_filesystem_path_type_e;
 
 #define LIBD_PF_FS_IS_ABS 1  // bit 0
 #define LIBD_PF_FS_IS_DIR 2  // bit 1
@@ -109,10 +109,9 @@ typedef enum {
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_init(
-  libd_platform_filesystem_path_o*      out_path,
-  const char*                           raw_path,
-  size_t                                raw_path_length_bytes,
-  libd_platform_filetype_path_type_e    type,
+  libd_platform_filesystem_path_o* out_path,
+  const char* raw_path,
+  libd_platform_filesystem_path_type_e type,
   libd_platform_filesystem_env_getter_f env_getter);
 
 /**
@@ -124,7 +123,7 @@ libd_platform_filesystem_path_init(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_join(
-  libd_platform_filesystem_path_o*       out_path,
+  libd_platform_filesystem_path_o* out_path,
   const libd_platform_filesystem_path_o* lhs_path,
   const libd_platform_filesystem_path_o* rhs_path);
 
@@ -136,7 +135,7 @@ libd_platform_filesystem_path_join(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_append(
-  libd_platform_filesystem_path_o*       lhs_path,
+  libd_platform_filesystem_path_o* lhs_path,
   const libd_platform_filesystem_path_o* rhs_path);
 
 /**
@@ -149,9 +148,9 @@ libd_platform_filesystem_path_append(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_ancestor(
-  libd_platform_filesystem_path_o*       out_path,
+  libd_platform_filesystem_path_o* out_path,
   const libd_platform_filesystem_path_o* start_path,
-  uint16_t                               n);
+  uint16_t n);
 
 /**
  * @brief Checks if child_path is a subpath of parent_path. The comparison is
@@ -165,7 +164,7 @@ libd_platform_filesystem_path_ancestor(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_is_subpath_of(
-  bool*                                  out_is_subpath,
+  bool* out_is_subpath,
   const libd_platform_filesystem_path_o* parent_path,
   const libd_platform_filesystem_path_o* child_path);
 
@@ -180,7 +179,7 @@ libd_platform_filesystem_path_is_subpath_of(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_is_equal(
-  bool*                                  out_is_equal,
+  bool* out_is_equal,
   const libd_platform_filesystem_path_o* path1,
   const libd_platform_filesystem_path_o* path2);
 
@@ -193,7 +192,7 @@ libd_platform_filesystem_path_is_equal(
  */
 libd_platform_filesystem_result_e
 libd_platform_filesystem_path_filename(
-  libd_platform_filesystem_path_o*       out_path,
+  libd_platform_filesystem_path_o* out_path,
   const libd_platform_filesystem_path_o* filename_path);
 
 /**

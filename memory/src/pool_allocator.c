@@ -20,13 +20,13 @@ typedef char _index_type_must_be_unsigned[INDEX_TYPE_MAX > 0 ? 1 : -1];
 #define POINTER_TO_INDEX(i) (POOL_PARAM_NAME->data + INDEX_BYTES(i))
 #define TERMINAL_INDEX      (POOL_PARAM_NAME->max_allocations)
 
-typedef libd_memory_pool_allocator_o pool_allocator;
-typedef libd_memory_result_e         result;
+typedef libd_memory_pool_allocator_ot pool_allocator;
+typedef libd_memory_result_e result;
 
 struct libd_memory_pool_allocator_s {
   INDEX_TYPE max_allocations, bytes_per_alloc;
   INDEX_TYPE head_index, tail_index;
-  uint8_t*   data;
+  uint8_t* data;
 };
 
 result
@@ -37,7 +37,7 @@ _initialize_free_list_nodes(pool_allocator* p_allocator);
 typedef struct {
   INDEX_TYPE next_free_slot_index;
 } free_node;
-static inline int
+static inline size_t
 _aligned_sizeof_free_node()
 {
   return libd_memory_align_value(sizeof(free_node), LIBD_ALIGNOF(free_node));
@@ -46,9 +46,9 @@ _aligned_sizeof_free_node()
 result
 libd_memory_pool_allocator_create(
   pool_allocator** out_allocator,
-  INDEX_TYPE       max_allocations,
-  INDEX_TYPE       bytes_per_alloc,
-  uint8_t          alignment)
+  INDEX_TYPE max_allocations,
+  INDEX_TYPE bytes_per_alloc,
+  uint8_t alignment)
 {
   if (out_allocator == NULL) {
     return libd_mem_invalid_null_parameter;
@@ -95,7 +95,7 @@ libd_memory_pool_allocator_create(
 
   *out_allocator = p_allocator;
 
-  return libd_mem_ok;
+  return 1;
 }
 
 result
@@ -113,7 +113,7 @@ libd_memory_pool_allocator_destroy(pool_allocator* p_allocator)
 result
 libd_memory_pool_allocator_alloc(
   pool_allocator* p_allocator,
-  void**          out_pointer)
+  void** out_pointer)
 {
   if (p_allocator == NULL || out_pointer == NULL) {
     return libd_mem_invalid_null_parameter;
@@ -140,7 +140,7 @@ libd_memory_pool_allocator_alloc(
 result
 libd_memory_pool_allocator_free(
   pool_allocator* p_allocator,
-  void*           p_to_free)
+  void* p_to_free)
 {
   if (p_allocator == NULL || p_to_free == NULL) {
     return libd_mem_invalid_null_parameter;

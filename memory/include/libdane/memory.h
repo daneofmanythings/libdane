@@ -41,18 +41,18 @@ typedef enum {
 /**
  * @brief Opaque handle for the linear allocator.
  */
-typedef struct libd_memory_linear_allocator_s libd_memory_linear_allocator_o;
+typedef struct libd_memory_linear_allocator_s libd_memory_linear_allocator_ot;
 
 /**
  * @brief Opaque handle to a linear allocator checkpoint;
  */
 typedef struct libd_memory_linear_allocator_savepoint_s
-  libd_memory_linear_allocator_savepoint_s;
+  libd_memory_linear_allocator_savepoint_ot;
 
 /**
  * @brief Opaque handle for the slab allocator.
  */
-typedef struct libd_memory_pool_allocator_s libd_memory_pool_allocator_o;
+typedef struct libd_memory_pool_allocator_s libd_memory_pool_allocator_ot;
 
 /**
  * @brief Alloc allback signature to pass to initializers.
@@ -61,7 +61,7 @@ typedef struct libd_memory_pool_allocator_s libd_memory_pool_allocator_o;
  * @return Pointer to the allocated memory.
  */
 typedef void* (*libd_memory_alloc_callback_f)(
-  void*  ctx,
+  void* ctx,
   size_t size_bytes);
 
 /**
@@ -114,10 +114,10 @@ libd_memory_is_valid_alignment(uint8_t alignment)
  * @param alignment The power of 2 to round to. This parameter MUST be a power
  * of 2.
  */
-static inline size_t
+static inline uintptr_t
 libd_memory_align_value(
   uintptr_t value,
-  uint8_t   alignment)
+  uint8_t alignment)
 {
   if (libd_memory_is_valid_alignment(alignment) != libd_mem_ok) {
     return libd_mem_invalid_alignment;
@@ -139,9 +139,9 @@ libd_memory_align_value(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_create(
-  libd_memory_linear_allocator_o** out_allocator,
-  size_t                           capacity_bytes,
-  uint8_t                          alignment);
+  libd_memory_linear_allocator_ot** out_allocator,
+  size_t capacity_bytes,
+  uint8_t alignment);
 
 /**
  * @brief Destroys the allocator.
@@ -150,7 +150,7 @@ libd_memory_linear_allocator_create(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_destroy(
-  libd_memory_linear_allocator_o* p_allocator);
+  libd_memory_linear_allocator_ot* p_allocator);
 
 /**
  * @brief Allocates memory in the arena.
@@ -161,9 +161,9 @@ libd_memory_linear_allocator_destroy(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_alloc(
-  libd_memory_linear_allocator_o* p_allocator,
-  void**                          out_pointer,
-  size_t                          size_bytes);
+  libd_memory_linear_allocator_ot* p_allocator,
+  void** out_pointer,
+  size_t size_bytes);
 
 /**
  * @brief Sets a savepoint which can be restored to.
@@ -173,8 +173,8 @@ libd_memory_linear_allocator_alloc(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_set_savepoint(
-  const libd_memory_linear_allocator_o*     p_allocator,
-  libd_memory_linear_allocator_savepoint_s* out_savepoint);
+  const libd_memory_linear_allocator_ot* p_allocator,
+  libd_memory_linear_allocator_savepoint_ot* out_savepoint);
 
 /**
  * @brief Restores the allocator state to when the savepoint was created by
@@ -188,8 +188,8 @@ libd_memory_linear_allocator_set_savepoint(
  */
 libd_memory_result_e
 libd_memory_linear_allocator_restore_savepoint(
-  libd_memory_linear_allocator_o*                 p_allocator,
-  const libd_memory_linear_allocator_savepoint_s* p_savepoint);
+  libd_memory_linear_allocator_ot* p_allocator,
+  const libd_memory_linear_allocator_savepoint_ot* p_savepoint);
 
 /**
  * @brief Resets the allocator to the default state by freeing all allocations.
@@ -197,7 +197,8 @@ libd_memory_linear_allocator_restore_savepoint(
  * @return RESULT_OK on success, error code otherwise.
  */
 libd_memory_result_e
-libd_memory_linear_allocator_reset(libd_memory_linear_allocator_o* p_allocator);
+libd_memory_linear_allocator_reset(
+  libd_memory_linear_allocator_ot* p_allocator);
 
 //==============================================================================
 // Pool Allocator API
@@ -208,16 +209,16 @@ libd_memory_linear_allocator_reset(libd_memory_linear_allocator_o* p_allocator);
  */
 libd_memory_result_e
 libd_memory_pool_allocator_create(
-  libd_memory_pool_allocator_o** out_allocator,
-  uint32_t                       max_allocations,
-  uint32_t                       bytes_per_alloc,
-  uint8_t                        alignment);
+  libd_memory_pool_allocator_ot** out_allocator,
+  uint32_t max_allocations,
+  uint32_t bytes_per_alloc,
+  uint8_t alignment);
 
 /**
  * @return RESULT_OK on success, error code otherwise
  */
 libd_memory_result_e
-libd_memory_pool_allocator_destroy(libd_memory_pool_allocator_o* p_allocator);
+libd_memory_pool_allocator_destroy(libd_memory_pool_allocator_ot* p_allocator);
 
 /**
  * @brief Allocates memory in a free block.
@@ -227,8 +228,8 @@ libd_memory_pool_allocator_destroy(libd_memory_pool_allocator_o* p_allocator);
  */
 libd_memory_result_e
 libd_memory_pool_allocator_alloc(
-  libd_memory_pool_allocator_o* p_allocator,
-  void**                        out_pointer);
+  libd_memory_pool_allocator_ot* p_allocator,
+  void** out_pointer);
 
 /**
  * @brief Frees the allocation for the given handle.
@@ -238,8 +239,8 @@ libd_memory_pool_allocator_alloc(
  */
 libd_memory_result_e
 libd_memory_pool_allocator_free(
-  libd_memory_pool_allocator_o* p_allocator,
-  void*                         p_to_free);
+  libd_memory_pool_allocator_ot* p_allocator,
+  void* p_to_free);
 
 /**
  * @brief Resets the pool, freeing all allocations.
@@ -247,6 +248,6 @@ libd_memory_pool_allocator_free(
  * @return RESULT_OK on success, non-zero otherwise.
  */
 libd_memory_result_e
-libd_memory_pool_allocator_reset(libd_memory_pool_allocator_o* p_allocator);
+libd_memory_pool_allocator_reset(libd_memory_pool_allocator_ot* p_allocator);
 
 #endif  // LIBDANE_MEMORY_H

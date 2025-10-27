@@ -21,50 +21,65 @@ typedef struct {
   uint32_t member;
 } large_s;
 
-libd_memory_linear_allocator_s*
-helper_create_linear_allocator(size_t capacity, uint8_t alignment)
+libd_memory_linear_allocator_ot*
+helper_create_linear_allocator(
+  size_t capacity,
+  uint8_t alignment)
 {
-  libd_memory_linear_allocator_s* allocator;
+  libd_memory_linear_allocator_ot* allocator;
   libd_memory_result_e result =
     libd_memory_linear_allocator_create(&allocator, capacity, alignment);
-  cr_assert(eq(u8, result, LIBD_MEM_OK));
+  cr_assert(eq(u8, result, libd_mem_ok));
 
   return allocator;
 }
 
 void
-helper_destroy_linear_allocator(libd_memory_linear_allocator_s* p_allocator)
+helper_destroy_linear_allocator(libd_memory_linear_allocator_ot* p_allocator)
 {
   libd_memory_result_e result =
     libd_memory_linear_allocator_destroy(p_allocator);
-  cr_assert(eq(u8, result, LIBD_MEM_OK));
+  cr_assert(eq(u8, result, libd_mem_ok));
 }
 
-Test(linear_allocator, create_invalid_parameters)
+Test(
+  linear_allocator,
+  create_invalid_parameters)
 {
   // null out parameter
-  cr_assert(eq(u8, libd_memory_linear_allocator_create(NULL, 16, 2),
-               LIBD_MEM_INVALID_NULL_PARAMETER));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_create(NULL, 16, 2),
+    libd_mem_invalid_null_parameter));
 
-  libd_memory_linear_allocator_s* handle;
+  libd_memory_linear_allocator_ot* handle;
 
   // zero capacity
-  cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 0, 2),
-               LIBD_MEM_INVALID_ZERO_PARAMETER));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_create(&handle, 0, 2),
+    libd_mem_invalid_zero_parameter));
 
   // invalid alignment values
-  cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 16, 0),
-               LIBD_MEM_INVALID_ZERO_PARAMETER));
-  cr_assert(eq(u8, libd_memory_linear_allocator_create(&handle, 16, 3),
-               LIBD_MEM_INVALID_ALIGNMENT));
-  cr_assert(
-    eq(u8, libd_memory_linear_allocator_create(&handle, 16, LIBD_MAX_ALIGN * 2),
-       LIBD_MEM_INVALID_ALIGNMENT));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_create(&handle, 16, 0),
+    libd_mem_invalid_alignment));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_create(&handle, 16, 3),
+    libd_mem_invalid_alignment));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_create(&handle, 16, LIBD_MAX_ALIGN * 2),
+    libd_mem_invalid_alignment));
 }
 
-Test(linear_allocator, alloc_general_use)
+Test(
+  linear_allocator,
+  alloc_general_use)
 {
-  libd_memory_linear_allocator_s* la =
+  libd_memory_linear_allocator_ot* la =
     helper_create_linear_allocator(DEFAULT_CAPACITY, LIBD_ALIGNOF(medium_s));
 
   // TODO: finish
@@ -72,22 +87,26 @@ Test(linear_allocator, alloc_general_use)
   helper_destroy_linear_allocator(la);
 }
 
-Test(linear_allocator, alloc_invalid_parameters)
+Test(
+  linear_allocator,
+  alloc_invalid_parameters)
 {
-  libd_memory_linear_allocator_s* la =
+  libd_memory_linear_allocator_ot* la =
     helper_create_linear_allocator(DEFAULT_CAPACITY, LIBD_ALIGNOF(medium_s));
 
   void* op;
-  cr_assert(eq(u8,
-               libd_memory_linear_allocator_alloc(la, NULL, sizeof(medium_s)),
-               LIBD_MEM_INVALID_NULL_PARAMETER));
-  cr_assert(eq(u8,
-               libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
-               LIBD_MEM_INVALID_NULL_PARAMETER));
-  cr_assert(eq(u8,
-               libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
-               LIBD_MEM_INVALID_NULL_PARAMETER));
-
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_alloc(la, NULL, sizeof(medium_s)),
+    libd_mem_invalid_null_parameter));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
+    libd_mem_invalid_null_parameter));
+  cr_assert(eq(
+    u8,
+    libd_memory_linear_allocator_alloc(NULL, &op, sizeof(medium_s)),
+    libd_mem_invalid_null_parameter));
 
   helper_destroy_linear_allocator(la);
 }
