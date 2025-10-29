@@ -3,6 +3,7 @@ memory_includes = include_directories('include')
 # tracking headers for rebuilding
 memory_sources = files(
   'include/libdane/memory.h',
+  'include/libdane/internal/align_compat.h'
 )
 
 # TODO: verify platform specifics
@@ -22,13 +23,19 @@ libd_memory= library('libd-memory',
   ],
   install: true,
   version: meson.project_version(),
-  soversion: '0'
+  soversion: '0',
 )
 
 # main header
 install_headers(
   'include/libdane/memory.h',
-  subdir: 'libdane'
+  subdir: 'libdane',
+)
+
+#sub headers
+install_headers(
+  'include/libdane/internal/align_compat.h',
+  subdir: 'libdane/internal',
 )
 
 # Create a dependency object for other libraries to use
@@ -57,3 +64,4 @@ if build_tests
   
   test('memory tests', memory_test, args: args)
 endif
+

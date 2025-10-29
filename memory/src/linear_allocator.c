@@ -80,6 +80,7 @@ libd_memory_linear_allocator_alloc(
   if (p_allocator == NULL || out_pointer == NULL) {
     return libd_mem_invalid_null_parameter;
   }
+
   if (p_allocator->capacity < p_allocator->head_index_bytes + size) {
     return libd_mem_no_memory;
   }
@@ -135,6 +136,20 @@ libd_memory_linear_allocator_reset(linear_allocator* p_allocator)
   }
 
   p_allocator->head_index_bytes = 0;
+
+  return libd_mem_ok;
+}
+
+libd_memory_result_e
+libd_memory_linear_allocator_bytes_free(
+  libd_memory_linear_allocator_ot* p_allocator,
+  size_t* out_size_bytes)
+{
+  if (p_allocator == NULL) {
+    return libd_mem_invalid_null_parameter;
+  }
+
+  *out_size_bytes = p_allocator->capacity - p_allocator->head_index_bytes;
 
   return libd_mem_ok;
 }

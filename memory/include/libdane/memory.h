@@ -200,6 +200,17 @@ libd_memory_result_e
 libd_memory_linear_allocator_reset(
   libd_memory_linear_allocator_ot* p_allocator);
 
+/**
+ * @brief Introspects the remaining number of bytes for allocation.
+ * @param p_allocator Handle to the allocator.
+ * @param out_size_bytes Out parameter for the remaining number of bytes.
+ * @return libd_mem_ok on success, non-zero otherwise.
+ */
+libd_memory_result_e
+libd_memory_linear_allocator_bytes_free(
+  libd_memory_linear_allocator_ot* p_allocator,
+  size_t* out_size_bytes);
+
 //==============================================================================
 // Pool Allocator API
 //==============================================================================

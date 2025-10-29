@@ -18,3 +18,7 @@ test: build
 	@ echo === TEST BEGIN ===
 	@ meson test -C builddir
 	@ echo === TEST END ===
+
+debug:
+	@ gdb -q ./builddir/platform/test_platform \
+		-ex="layout src target remote localhost:1234"

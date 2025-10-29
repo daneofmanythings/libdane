@@ -54,10 +54,10 @@ typedef const char* (*libd_platform_filesystem_env_getter_f)(const char* key);
  * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
  */
 typedef enum {
-  libd_pf_fs_rel_file     = 0,  // 0b0000
-  libd_pf_fs_abs_file     = 1,  // 0b0001
-  libd_pf_fs_rel_diretory = 2,  // 0b0010
-  libd_pf_fs_abs_diretory = 3,  // 0b0011
+  libd_pf_fs_rel_file      = 0,  // 0b0000
+  libd_pf_fs_abs_file      = 1,  // 0b0001
+  libd_pf_fs_rel_directory = 2,  // 0b0010
+  libd_pf_fs_abs_directory = 3,  // 0b0011
 } libd_platform_filesystem_path_type_e;
 
 #define LIBD_PF_FS_IS_ABS 1  // bit 0
