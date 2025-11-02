@@ -15,6 +15,8 @@ endif
 
 host_system = host_machine.system()
 
+core_includes = include_directories('include')
+
 system_windows = [
   'windows',
 ]

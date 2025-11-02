@@ -1,4 +1,4 @@
-#include "../../../include/libdane/platform/filesystem.h"
+#include "../../include/libdane/platform/filesystem.h"
 #include "./parsing.h"
 
 #include <ctype.h>
@@ -13,99 +13,92 @@
 #define PATH_BUFFER_MAX (LIBD_PF_FS_PATH_MAX + 1)
 #define WORK_BUFFER_MAX (2 * LIBD_PF_FS_PATH_MAX + 1)
 
-struct libd_platform_filesystem_path_s {
+struct filesystem_path {
   size_t length;
   char value[PATH_BUFFER_MAX];
 };
 
-typedef libd_platform_filesystem_result_e result_e;
-typedef libd_platform_filesystem_path_o path_o;
-typedef libd_platform_filesystem_path_type_e path_type_e;
-typedef libd_platform_filesystem_env_getter_f env_getter_f;
-
-static result_e
+static enum libd_result
 expand_path_env_variables(
   char dest[WORK_BUFFER_MAX],
   const char* path,
-  env_getter_f env_getter);
+  libd_platform_filesystem_env_getter_f env_getter);
 
-static result_e
+static enum libd_result
 normalize_path_string(
   char dest_path[WORK_BUFFER_MAX],
   const char src_path[WORK_BUFFER_MAX],
-  path_type_e path_type);
+  enum libd_platform_filesystem_path_type path_type);
 
 static inline bool
 _is_valid_portable_path_char(const char c);
 
 static inline bool
-_is_path_absolute(path_type_e path_type);
+_is_path_absolute(enum libd_platform_filesystem_path_type path_type);
 
 static inline bool
-_is_path_directory(path_type_e path_type);
+_is_path_directory(enum libd_platform_filesystem_path_type path_type);
 
 static inline char*
 _find_char_or_end(
   char* s,
   char c);
 
-result_e
+enum libd_result
 libd_platform_filesystem_path_init(
-  path_o* out_path,
+  struct filesystem_path* out_path,
   const char* raw_path,
-  path_type_e type,
-  env_getter_f env_getter)
+  enum libd_platform_filesystem_path_type type,
+  libd_platform_filesystem_env_getter_f env_getter)
 {
   if (out_path == NULL || raw_path == NULL) {
-    return libd_pf_fs_null_parameter;
+    return libd_invalid_parameter;
   }
   out_path->value[0] = '\0';
 
   char expansion_buffer[WORK_BUFFER_MAX];
 
-  result_e result =
+  enum libd_result result =
     expand_path_env_variables(expansion_buffer, raw_path, env_getter);
-  if (result != libd_pf_fs_ok) {
+  if (result != libd_ok) {
     return result;
   }
 
   char normalization_buffer[WORK_BUFFER_MAX];
   result = normalize_path_string(normalization_buffer, expansion_buffer, type);
-  if (result != libd_pf_fs_ok) {
+  if (result != libd_ok) {
     return result;
   }
 
   size_t length = strlen(normalization_buffer);
   if (length >= LIBD_PF_FS_PATH_MAX) {
-    return libd_pf_fs_path_too_long;
+    return libd_invalid_path;
   }
 
   out_path->length = length;
   strcpy(out_path->value, normalization_buffer);
 
-  return libd_pf_fs_ok;
+  return libd_ok;
 }
 
-result_e
+enum libd_result
 expand_path_env_variables(
   char dest[WORK_BUFFER_MAX],
   const char* path,
-  env_getter_f env_getter)
+  libd_platform_filesystem_env_getter_f env_getter)
 {
   // user declared no environment variables in this path
   if (env_getter == NULL) {
     strcpy(dest, path);
-    return libd_pf_fs_ok;
+    return libd_ok;
   }
 
   if (path == NULL) {
-    return libd_pf_fs_null_parameter;
+    return libd_invalid_parameter;
   }
-  if (*path == '\0') {
-    return libd_pf_fs_empty_path;
-  }
-  if (strlen(path) >= WORK_BUFFER_MAX) {  // eq because of room for '\0'
-    return libd_pf_fs_path_too_long;
+  // >=, room for '\0'
+  if (*path == '\0' || strlen(path) >= WORK_BUFFER_MAX) {
+    return libd_invalid_path;
   }
 
   size_t num_chars_copied          = 0;
@@ -132,7 +125,7 @@ expand_path_env_variables(
   // loop until all environment variables are expanded;
   while (true) {
     if (infinite_loop_protection > loop_max) {
-      return libd_pf_fs_too_many_env_expansions;
+      return libd_too_many_env_expansions;
     }
     infinite_loop_protection += 1;
 
@@ -147,7 +140,7 @@ expand_path_env_variables(
     env_end = env_start;
     env_end = _find_char_or_end(env_end, '/');
     if (env_end - env_start == 1) {  // "$/" or "$\0"
-      return libd_pf_fs_invalid_path;
+      return libd_invalid_path;
     }
 
     // The inspect buffer is being mutated to cut out env var name.
@@ -156,7 +149,7 @@ expand_path_env_variables(
 
     env_variable_expansion = env_getter(env_start + 1);
     if (env_variable_expansion == NULL) {
-      return libd_pf_fs_path_env_var_not_found;
+      return libd_env_var_not_found;
     }
 
     // building a new path from the env variable expansion
@@ -170,7 +163,7 @@ expand_path_env_variables(
 
     // checking for truncation
     if (num_chars_copied >= WORK_BUFFER_MAX) {  // eq because of room for '\0'
-      return libd_pf_fs_path_too_long;
+      return libd_invalid_path;
     }
 
     // swap pointers for the next iteration.
@@ -182,36 +175,36 @@ expand_path_env_variables(
   // copy into dest;
   strcpy(dest, inspect);
 
-  return libd_pf_fs_ok;
+  return libd_ok;
 }
 
-static result_e
+static enum libd_result
 normalize_path_string(
   char dest_path[WORK_BUFFER_MAX],
   const char src_path[WORK_BUFFER_MAX],
-  path_type_e path_type)
+  enum libd_platform_filesystem_path_type path_type)
 {
-  result_e result = libd_pf_fs_ok;
+  enum libd_result result = libd_ok;
 
   enum libd_allocator_result tokenizer_result;
   struct libd_path_tokenizer* pt;
   tokenizer_result = libd_path_tokenizer_create(&pt, src_path, path_type);
   if (tokenizer_result != ok) {
     // TODO: make this more coherent
-    result = libd_pf_fs_no_memory;
+    result = libd_no_memory;
     goto exit;
   }
 
   tokenizer_result = libd_path_tokenizer_run(pt);
   if (tokenizer_result != ok) {
     // TODO: make this more coherent
-    result = libd_pf_fs_path_too_long;  // or oob
+    result = libd_invalid_path;  // or oob
     goto cleanup;
   }
 
   tokenizer_result = libd_path_tokenizer_evaluate(pt, dest_path);
   if (tokenizer_result != ok) {
-    result = libd_pf_fs_invalid_path;
+    result = libd_invalid_path;
     goto cleanup;
   }
 
@@ -222,7 +215,7 @@ exit:
 }
 
 const char*
-libd_platform_filesystem_path_string(libd_platform_filesystem_path_o* path)
+libd_platform_filesystem_path_string(struct filesystem_path* path)
 {
   return path->value;
 }
@@ -245,13 +238,13 @@ _is_valid_portable_path_char(const char c)
 }
 
 static inline bool
-_is_path_absolute(libd_platform_filesystem_path_type_e path_type)
+_is_path_absolute(enum libd_platform_filesystem_path_type path_type)
 {
   return (path_type & LIBD_PF_FS_IS_ABS) == LIBD_PF_FS_IS_ABS;
 }
 
 static inline bool
-_is_path_directory(libd_platform_filesystem_path_type_e path_type)
+_is_path_directory(enum libd_platform_filesystem_path_type path_type)
 {
   return (path_type & LIBD_PF_FS_IS_DIR) == LIBD_PF_FS_IS_DIR;
 }

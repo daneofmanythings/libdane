@@ -38,6 +38,7 @@ install_headers(
 libd_errors_dep = declare_dependency(
   link_with: libd_errors,
   dependencies: [
+    core_includes,
     libd_platform_dep,
   ],
   include_directories: [

@@ -1,5 +1,5 @@
-#include "../../../include/libdane/platform/filesystem.h"
-#include "../../internal/internal.h"
+#include "../../include/libdane/platform/filesystem.h"
+#include "../internal/internal.h"
 #include "./parsing.h"
 
 #include <stdbool.h>
@@ -15,7 +15,7 @@ enum libd_allocator_result
 libd_path_tokenizer_create(
   struct libd_path_tokenizer** out_pt,
   const char* src_path,
-  libd_platform_filesystem_path_type_e path_type)
+  enum libd_platform_filesystem_path_type path_type)
 {
   enum libd_allocator_result r = ok;
 

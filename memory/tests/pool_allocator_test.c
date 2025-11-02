@@ -1,66 +1,47 @@
+#include "../../testing/include/libdane/testing.h"
 #include "../include/libdane/memory.h"
 
-#include <criterion/criterion.h>
-#include <criterion/new/assert.h>
-#include <criterion/parameterized.h>
-
-libd_memory_pool_allocator_ot*
+libd_pool_allocator_h*
 helper_pool_allocator_create(
   uint32_t capacity,
   uint32_t size,
   uint8_t alignment)
 {
-  libd_memory_pool_allocator_ot* pool;
-  libd_memory_result_e result;
-
-  result = libd_memory_pool_allocator_create(&pool, capacity, size, alignment);
-  cr_assert(eq(u8, result, libd_mem_ok));
+  libd_pool_allocator_h* pool;
+  ASSERT_OK(libd_pool_allocator_create(&pool, capacity, size, alignment));
 
   return pool;
 }
 
-libd_memory_result_e
-helper_pool_allocator_destroy(libd_memory_pool_allocator_ot* pool)
-{
-  return libd_memory_pool_allocator_destroy(pool);
-}
-
-struct create_param {
+struct pool_allocator_create_param {
   uint32_t input_max_allocations;
   uint32_t input_bytes_per_allocation;
   uint32_t input_alignment;
-  libd_memory_result_e expected;
+  enum libd_result expected;
 };
 
-ParameterizedTestParameters(
-  pool_allocator,
-  invalid_parameters)
+TEST(pool_allocator_invalid_params)
 {
-  static struct create_param params[] = {
+  static struct pool_allocator_create_param test_cases[] = {
     {
       .input_max_allocations      = 0,
       .input_bytes_per_allocation = 8,
       .input_alignment            = 8,
-      .expected                   = libd_mem_invalid_zero_parameter,
+      .expected                   = libd_invalid_parameter,
     },
   };
-  size_t nb_params = sizeof(params) / sizeof(struct create_param);
-  return cr_make_param_array(struct create_param, params, nb_params, NULL);
-}
 
-ParameterizedTest(
-  struct create_param* param,
-  pool_allocator,
-  invalid_parameters)
-{
-  libd_memory_result_e result;
+  size_t num_tests = ARR_LEN(test_cases);
+  for (size_t i = 0; i < num_tests; i += 1) {
+    enum libd_result result;
+    libd_pool_allocator_h* pool;
 
-  libd_memory_pool_allocator_ot* pool;
-  result = libd_memory_pool_allocator_create(
-    &pool,
-    param->input_max_allocations,
-    param->input_bytes_per_allocation,
-    param->input_alignment);
+    result = libd_pool_allocator_create(
+      &pool,
+      test_cases[i].input_max_allocations,
+      test_cases[i].input_bytes_per_allocation,
+      test_cases[i].input_alignment);
 
-  cr_assert(eq(u8, result, param->expected));
+    ASSERT_EQ_U(result, test_cases[i].expected);
+  }
 }

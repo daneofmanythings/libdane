@@ -1,9 +1,6 @@
+#include "../../testing/include/libdane/testing.h"
 #include "../include/libdane/platform/filesystem.h"
 
-#include <criterion/criterion.h>
-#include <criterion/internal/new_asserts.h>
-#include <criterion/new/assert.h>
-#include <criterion/parameterized.h>
 #include <string.h>
 
 static const char*
@@ -21,15 +18,13 @@ struct init_params {
   const char input_path[64];
   const char expected_path[64];
 
-  libd_platform_filesystem_path_type_e input_type;
-  libd_platform_filesystem_result_e expected_result;
+  enum libd_platform_filesystem_path_type input_type;
+  enum libd_result expected_result;
 
   const char* (*input_env_getter)(const char*);
 };
 
-ParameterizedTestParameters(
-  path,
-  init_env_expansion)
+TEST(path_normalization)
 {
   static struct init_params params[] = {
     {
@@ -37,7 +32,7 @@ ParameterizedTestParameters(
       .input_path       = "/test/\0",
       .expected_path    = "/test/\0",
       .input_type       = libd_pf_fs_abs_directory,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -45,7 +40,7 @@ ParameterizedTestParameters(
       .input_path       = "/test\0",
       .expected_path    = "/test/\0",
       .input_type       = libd_pf_fs_abs_directory,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -53,7 +48,7 @@ ParameterizedTestParameters(
       .input_path       = "/test/\0",
       .expected_path    = "/test\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -61,7 +56,7 @@ ParameterizedTestParameters(
       .input_path       = "/test\0",
       .expected_path    = "/test\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -69,7 +64,7 @@ ParameterizedTestParameters(
       .input_path       = "/test.extension/\0",
       .expected_path    = "/test.extension\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -77,7 +72,7 @@ ParameterizedTestParameters(
       .input_path       = "/\0",
       .expected_path    = "/\0",
       .input_type       = libd_pf_fs_abs_directory,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -85,7 +80,7 @@ ParameterizedTestParameters(
       .input_path       = "//\0",
       .expected_path    = "/\0",
       .input_type       = libd_pf_fs_abs_directory,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -93,7 +88,7 @@ ParameterizedTestParameters(
       .input_path       = "///\0",
       .expected_path    = "/\0",
       .input_type       = libd_pf_fs_abs_directory,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -101,7 +96,7 @@ ParameterizedTestParameters(
       .input_path       = "//multiple///slash////file//////\0",
       .expected_path    = "/multiple/slash/file\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -109,7 +104,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/./user/.//foo//./bar//.///baz\0",
       .expected_path    = "/home/user/foo/bar/baz/\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -117,7 +112,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/../user/foo/\0",
       .expected_path    = "/user/foo\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -125,7 +120,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/user/.foo/\0",
       .expected_path    = "/home/user/.foo\0",
       .input_type       = libd_pf_fs_abs_file,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .input_env_getter = NULL,
     },
     {
@@ -133,7 +128,7 @@ ParameterizedTestParameters(
       .input_path       = "\0",
       .expected_path    = "\0",
       .input_type       = libd_pf_fs_rel_file,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .input_env_getter = NULL,
     },
     {
@@ -141,7 +136,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/.../user/\0",
       .expected_path    = "\0",
       .input_type       = libd_pf_fs_abs_directory,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .input_env_getter = NULL,
     },
     {
@@ -149,7 +144,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/..a/user/\0",
       .input_type       = libd_pf_fs_abs_file,
       .input_env_getter = NULL,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .expected_path    = "\0",
     },
     {
@@ -157,7 +152,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/a../user/\0",
       .input_type       = libd_pf_fs_abs_file,
       .input_env_getter = NULL,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .expected_path    = "\0",
     },
     {
@@ -165,7 +160,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/a-./user/\0",
       .input_type       = libd_pf_fs_abs_file,
       .input_env_getter = NULL,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .expected_path    = "\0",
     },
     {
@@ -173,7 +168,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/user/foo.\0",
       .input_type       = libd_pf_fs_abs_file,
       .input_env_getter = NULL,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .expected_path    = "\0",
     },
     {
@@ -181,7 +176,7 @@ ParameterizedTestParameters(
       .input_path       = "/home/../../user/../foo\0",
       .input_type       = libd_pf_fs_abs_file,
       .input_env_getter = NULL,
-      .expected_result  = libd_pf_fs_invalid_path,
+      .expected_result  = libd_invalid_path,
       .expected_path    = "\0",
     },
     // Expansion
@@ -190,33 +185,20 @@ ParameterizedTestParameters(
       .input_path       = "$HOME/foo/\0",
       .input_type       = libd_pf_fs_abs_directory,
       .input_env_getter = env_var_getter,
-      .expected_result  = libd_pf_fs_ok,
+      .expected_result  = libd_ok,
       .expected_path    = "/home/user/foo/\0",
     },
   };
 
-  size_t nb_params = sizeof(params) / sizeof(struct init_params);
-  return cr_make_param_array(struct init_params, params, nb_params, NULL);
-}
+  libd_platform_filesystem_path_h* path = malloc(LIBD_PF_FS_PATH_ALLOC_SIZE);
 
-ParameterizedTest(
-  struct init_params* params,
-  path,
-  init_env_expansion)
-{
-  cr_assert(1);
-  // libd_platform_filesystem_path_o* path = malloc(LIBD_PF_FS_PATH_ALLOC_SIZE);
-  //
-  // libd_platform_filesystem_result_e result;
-  // result = libd_platform_filesystem_path_init(
-  //   path, params->input_path, params->input_type, params->input_env_getter);
-  //
-  // cr_assert(
-  //   eq(str, libd_platform_filesystem_path_string(path),
-  //   params->expected_path), "test name='%s'\ninput='%s'\n",
-  //   params->test_name,
-  //   params->input_path);
-  //
-  // cr_assert(eq(u8, result, params->expected_result), "%s\n",
-  // params->test_name);
+  size_t num_tests = ARR_LEN(params);
+  for (size_t i = 0; i < num_tests; i += 1) {
+    enum libd_result result;
+    result = libd_platform_filesystem_path_init(
+      path, params->input_path, params->input_type, params->input_env_getter);
+    ASSERT_EQ_STR(
+      libd_platform_filesystem_path_string(path), params->expected_path);
+    ASSERT_EQ_U(result, params->expected_result);
+  }
 }

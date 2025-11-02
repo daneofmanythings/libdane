@@ -6,7 +6,7 @@
 #ifndef LIBD_FILESYSTEM_INTERNAL_H
 #define LIBD_FILESYSTEM_INTERNAL_H
 
-#include <libdane/memory.h>
+#include "../../../memory/include/libdane/memory.h"
 
 enum libd_allocator_result {
   ok,
@@ -16,7 +16,7 @@ enum libd_allocator_result {
 };
 
 struct libd_allocator_wrapper {
-  libd_memory_linear_allocator_ot* a;
+  libd_linear_allocator_h* a;
 };
 
 typedef void* (*alloc_f)(

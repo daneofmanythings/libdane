@@ -12,9 +12,9 @@ platform_sources = files(
 
 if host_system in system_posix
   platform_sources += files(
-    'src/posix/thread/thread_local_storage.c',
-    'src/posix/filesystem/path.c',
-    'src/posix/filesystem/path_parsing.c',
+    'src/posix/thread_local_storage.c',
+    'src/posix/path.c',
+    'src/posix/path_parsing.c',
     'src/internal/allocator_wrap.c',
   )
 else
@@ -27,6 +27,7 @@ libd_platform= library('libd-platform',
     libd_memory_dep,
   ],
   include_directories: [
+    core_includes,
     platform_includes,
   ],
   install: true,

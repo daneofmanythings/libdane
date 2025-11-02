@@ -44,9 +44,18 @@ typedef int64_t s64;
 #define S64_MAX _SIGNED_MAX(64)
 
 //=============================================================================
+//  Libdane convenience macros
+//=============================================================================
+
+#define ARR_LEN(a) (sizeof(a) / sizeof(a[0]))
+
+//=============================================================================
 //  Libdane result codes
 //=============================================================================
 
+/**
+ * @brief Result codes for all the libraries in one place.
+ */
 enum libd_result {
   libd_ok,
   libd_err,
@@ -61,8 +70,11 @@ enum libd_result {
   libd_env_var_not_found,
   libd_too_many_env_expansions,
 
+  libd_thread_init_failed,
+
   libd_invalid_alignment, /**< An invalid alignment value was given */
   libd_invalid_pointer,   /**< An invalid pointer parameter was detected */
+  libd_free_list_failure,
   libd_index_must_be_unsigned,
   libd_invalid_free, /**< Tried to free memory from an arena that has no
                        allocations */

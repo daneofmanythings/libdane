@@ -19,6 +19,7 @@ endif
 libd_memory= library('libd-memory',
   memory_sources,
   include_directories: [
+    core_includes,
     memory_includes,
   ],
   install: true,
@@ -50,6 +51,7 @@ if build_tests
   test_sources = files(
     'tests/linear_allocator_test.c',
     'tests/pool_allocator_test.c',
+    'tests/test_main.c',
   )
 
   memory_test = executable('test_memory',

@@ -6,30 +6,11 @@
 #ifndef LIBD_PLATFORM_FILESYSTEM_H
 #define LIBD_PLATFORM_FILESYSTEM_H
 
+#include "../../../../include/types.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-//==============================================================================
-// Result Codes
-//==============================================================================
-
-/**
- * @brief The result codes used by this library.
- */
-typedef enum {
-  libd_pf_fs_ok, /**< Operation successful */
-  libd_pf_fs_no_memory,
-  libd_pf_fs_null_parameter,
-  libd_pf_fs_invalid_path, /**< The path provided is invalid */
-  libd_pf_fs_path_too_long,
-  libd_pf_fs_empty_path,
-  libd_pf_fs_invalid_path_type,
-  libd_pf_fs_path_out_of_bounds,
-  libd_pf_fs_path_env_var_not_found,
-  libd_pf_fs_too_many_env_expansions,
-  libd_platform_filesystem_result_e_count, /**< The number of result codes */
-} libd_platform_filesystem_result_e;
 
 //==============================================================================
 // Type definitions
@@ -38,7 +19,7 @@ typedef enum {
 /**
  * @brief Opaque handle to a path struct.
  */
-typedef struct libd_platform_filesystem_path_s libd_platform_filesystem_path_o;
+typedef struct filesystem_path libd_platform_filesystem_path_h;
 
 /**
  * @brief Signature for generic environment variable getter.
@@ -53,12 +34,12 @@ typedef const char* (*libd_platform_filesystem_env_getter_f)(const char* key);
  * @note The order of this enum should not change because it allows for bit
  * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
  */
-typedef enum {
+enum libd_platform_filesystem_path_type {
   libd_pf_fs_rel_file      = 0,  // 0b0000
   libd_pf_fs_abs_file      = 1,  // 0b0001
   libd_pf_fs_rel_directory = 2,  // 0b0010
   libd_pf_fs_abs_directory = 3,  // 0b0011
-} libd_platform_filesystem_path_type_e;
+};
 
 #define LIBD_PF_FS_IS_ABS 1  // bit 0
 #define LIBD_PF_FS_IS_DIR 2  // bit 1
@@ -107,11 +88,11 @@ typedef enum {
  * @param env_getter The function used to retrieve environment variables.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+enum libd_result
 libd_platform_filesystem_path_init(
-  libd_platform_filesystem_path_o* out_path,
+  libd_platform_filesystem_path_h* out_path,
   const char* raw_path,
-  libd_platform_filesystem_path_type_e type,
+  enum libd_platform_filesystem_path_type type,
   libd_platform_filesystem_env_getter_f env_getter);
 
 /**
@@ -121,11 +102,11 @@ libd_platform_filesystem_path_init(
  * @param rhs_path Path to join with (right hand side).
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+libd_platform_filesystem_path_h
 libd_platform_filesystem_path_join(
-  libd_platform_filesystem_path_o* out_path,
-  const libd_platform_filesystem_path_o* lhs_path,
-  const libd_platform_filesystem_path_o* rhs_path);
+  libd_platform_filesystem_path_h* out_path,
+  const libd_platform_filesystem_path_h* lhs_path,
+  const libd_platform_filesystem_path_h* rhs_path);
 
 /**
  * @brief Join two paths and mutate the lhs path with the result.
@@ -133,10 +114,10 @@ libd_platform_filesystem_path_join(
  * @param rhs_path Path to append.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+libd_platform_filesystem_path_h
 libd_platform_filesystem_path_append(
-  libd_platform_filesystem_path_o* lhs_path,
-  const libd_platform_filesystem_path_o* rhs_path);
+  libd_platform_filesystem_path_h* lhs_path,
+  const libd_platform_filesystem_path_h* rhs_path);
 
 /**
  * @brief Gets the nth ancestor of the given path and initializes a new path
@@ -146,10 +127,10 @@ libd_platform_filesystem_path_append(
  * @param n How many ancestors up to walk.
  * return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+libd_platform_filesystem_path_h
 libd_platform_filesystem_path_ancestor(
-  libd_platform_filesystem_path_o* out_path,
-  const libd_platform_filesystem_path_o* start_path,
+  libd_platform_filesystem_path_h* out_path,
+  const libd_platform_filesystem_path_h* start_path,
   uint16_t n);
 
 /**
@@ -162,11 +143,11 @@ libd_platform_filesystem_path_ancestor(
  * @param child_path The potential child/descendant path to check.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+libd_platform_filesystem_path_h
 libd_platform_filesystem_path_is_subpath_of(
   bool* out_is_subpath,
-  const libd_platform_filesystem_path_o* parent_path,
-  const libd_platform_filesystem_path_o* child_path);
+  const libd_platform_filesystem_path_h* parent_path,
+  const libd_platform_filesystem_path_h* child_path);
 
 /**
  * @brief Checks if two paths are equal. The comparison is case-insensitive on
@@ -177,11 +158,11 @@ libd_platform_filesystem_path_is_subpath_of(
  * @param path2 Second path to compare.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+libd_platform_filesystem_path_h
 libd_platform_filesystem_path_is_equal(
   bool* out_is_equal,
-  const libd_platform_filesystem_path_o* path1,
-  const libd_platform_filesystem_path_o* path2);
+  const libd_platform_filesystem_path_h* left_path,
+  const libd_platform_filesystem_path_h* right_path);
 
 /**
  * @brief Puts the filename into an out parameter if it exists. Will fail if
@@ -190,10 +171,10 @@ libd_platform_filesystem_path_is_equal(
  * @param filename_path Path object to extract the filename from.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_platform_filesystem_result_e
+libd_platform_filesystem_path_h
 libd_platform_filesystem_path_filename(
-  libd_platform_filesystem_path_o* out_path,
-  const libd_platform_filesystem_path_o* filename_path);
+  libd_platform_filesystem_path_h* out_path,
+  const libd_platform_filesystem_path_h* filename_path);
 
 /**
  * @brief Returns a pointer to the internal path string.
@@ -201,7 +182,7 @@ libd_platform_filesystem_path_filename(
  * @return pointer to the internal path string.
  */
 const char*
-libd_platform_filesystem_path_string(libd_platform_filesystem_path_o* path);
+libd_platform_filesystem_path_string(libd_platform_filesystem_path_h* path);
 
 // get extension
 
