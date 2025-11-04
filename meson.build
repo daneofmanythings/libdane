@@ -1,40 +1,22 @@
-project('libdane', 'c',
+project(
+  'libd',
+  'c',
   version: '0.1.0',
   default_options: [
     'warning_level=3',
     'c_std=c99',
-    'default_library=both', 
-  ]
+    'default_library=both',
+  ],
 )
 
-build_tests = get_option('tests')
+libd_includedirs = include_directories(
+  'include',
+  'src',
+)
 
-if build_tests
-  criterion_dep = dependency('criterion', required: true)
+subdir('include')
+subdir('src')
+
+if get_option('tests')
+  subdir('tests')
 endif
-
-host_system = host_machine.system()
-
-core_includes = include_directories('include')
-
-system_windows = [
-  'windows',
-]
-
-system_posix = [
-  'linux',
-  'darwin',
-  'openbsd',
-  'freebsd',
-]
-
-libs = [
-  'memory',
-  'platform',
-  'errors',
-]
-
-foreach lib: libs
-  subdir(lib)
-endforeach
-

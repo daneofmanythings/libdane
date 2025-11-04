@@ -1,5 +1,6 @@
-option('tests',
+option(
+  'tests',
   type: 'boolean',
   value: true,
-  description: 'Build and run tests'
+  description: 'Build and run tests',
 )
