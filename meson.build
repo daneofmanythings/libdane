@@ -11,7 +11,6 @@ project(
 
 libd_includedirs = include_directories(
   'include',
-  'src',
 )
 
 subdir('include')

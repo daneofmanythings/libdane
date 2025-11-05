@@ -1,3 +1,5 @@
+#include "../../../include/libd/common.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

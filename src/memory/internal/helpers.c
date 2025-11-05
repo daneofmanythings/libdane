@@ -1,7 +1,7 @@
 #include "helpers.h"
 
 #include "../../../include/libd/common.h"
-#include "./align_compat.h"
+#include "../../../include/libd/utils/align_compat.h"
 
 #include <stdbool.h>
 #include <stddef.h>

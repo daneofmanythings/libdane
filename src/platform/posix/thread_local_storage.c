@@ -1,5 +1,4 @@
-#include "../../../include/types.h"
-#include "../../include/libdane/platform/thread.h"
+#include "../../../include/libd/platform/threads.h"
 
 #include <pthread.h>
 #include <stddef.h>

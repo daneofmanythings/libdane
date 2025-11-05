@@ -14,15 +14,12 @@ enum filepath_result {
 #define eof_type       2
 typedef u8 token_type_e;
 
-struct path_token {
-  token_type_e type;
-  char value[];
-};
-
 struct path_token_node {
   struct path_token_node* prev;
   struct path_token_node* next;
-  struct path_token token;
+  token_type_e type;
+  u8 val_len;
+  char value[];
 };
 
 struct filepath_allocator {
@@ -33,7 +30,6 @@ struct filepath_allocator {
 
 struct filepath_resolver {
   const char* src;
-  size_t scan_pos;
   enum libd_filesystem_path_type path_type;
   struct path_token_node* head;
   struct filepath_allocator allocator;
@@ -47,13 +43,13 @@ struct filepath {
 };
 
 enum libd_result
-libd_filepath_resolver_init(
+libd_filepath_resolver_create(
   struct filepath_resolver** out_fpr,
   const char* src_path,
   enum libd_filesystem_path_type path_type);
 
 void
-libd_filepath_resolver_release(struct filepath_resolver* fpr);
+libd_filepath_resolver_destroy(struct filepath_resolver* fpr);
 
 enum libd_result
 libd_filepath_resolver_tokenize(struct filepath_resolver* fpr);
@@ -61,13 +57,13 @@ libd_filepath_resolver_tokenize(struct filepath_resolver* fpr);
 enum libd_result
 libd_filepath_resolver_expand(
   struct filepath_resolver* fpr,
-  libd_filesystem_env_getter_f env_getter);
+  libd_filesystem_env_get_f env_getter);
 
 enum libd_result
 libd_filepath_resolver_normalize(struct filepath_resolver* fpr);
 
 enum libd_result
-libd_filepath_resolver_dump(
+libd_filepath_resolver_dump_to_filepath(
   struct filepath_resolver* fpr,
   struct filepath* dest);
 

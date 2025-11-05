@@ -6,7 +6,7 @@ memory_sources += files(
   'pool_allocator.c',
 )
 
-memory_internal_includes = include_dirs('internal')
+memory_internal_includes = include_directories('internal')
 
 sources += memory_sources
 internal_includes += memory_internal_includes

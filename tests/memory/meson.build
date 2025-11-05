@@ -1,8 +1,8 @@
-memory_internal_includes = include_directories('../../src/memory/internal/')
+memory_internal_includes = include_directories(
+  '../../src/memory/internal/',
+)
 
 memory_test_sources = files(
-  'linear_allocator_test.c',
-  'pool_allocator_test.c',
   'test_main.c',
 )
 

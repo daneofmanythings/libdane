@@ -1,5 +1,6 @@
 test_sources = [
   'memory',
+  'filesystem',
   # 'platform',
   # 'errors',
 ]

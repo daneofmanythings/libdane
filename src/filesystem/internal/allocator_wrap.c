@@ -2,24 +2,24 @@
 
 #include "../../../include/libd/memory.h"
 
-enum libd_allocator_wrapper_result
+enum libd_result
 libd_allocator_wrapper_create(
-  struct libd_allocator_wrapper* allocator,
+  struct filepath_allocator_wrapper* allocator,
   size_t size,
   uint8_t alignment)
 {
   enum libd_result r =
     libd_linear_allocator_create(&allocator->a, size, alignment);
   if (r != libd_ok) {
-    return enomem;
+    return r;
   }
 
-  return ok;
+  return r;
 }
 
 void*
 libd_allocator_wrapper_alloc(
-  struct libd_allocator_wrapper* allocator,
+  struct filepath_allocator_wrapper* allocator,
   size_t bytes)
 {
   void* out_ptr;
@@ -32,13 +32,13 @@ libd_allocator_wrapper_alloc(
 }
 
 void
-libd_allocator_wrapper_reset(struct libd_allocator_wrapper* allocator)
+libd_allocator_wrapper_reset(struct filepath_allocator_wrapper* allocator)
 {
   libd_linear_allocator_reset(allocator->a);
 }
 
 void
-libd_allocator_wrapper_destroy(struct libd_allocator_wrapper* allocator)
+libd_allocator_wrapper_destroy(struct filepath_allocator_wrapper* allocator)
 {
   libd_linear_allocator_destroy(allocator->a);
   allocator->a = NULL;

@@ -14,9 +14,6 @@ host_system = host_machine.system()
 
 if host_system in system_posix
   platform_sources += files(
-    'src/internal/allocator_wrap.c',
-    'src/posix/path.c',
-    'src/posix/path_parsing.c',
     'src/posix/thread_local_storage.c',
   )
 else

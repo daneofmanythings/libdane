@@ -4,21 +4,27 @@
 
 #include <string.h>
 
+size_t
+libd_filesystem_filepath_get_required_size(void)
+{
+  return sizeof(struct filepath);
+}
+
 enum libd_result
-libd_filesystem_path_init(
+libd_filesystem_filepath_init(
   struct filepath* out_fp,
   const char* raw_path,
   enum libd_filesystem_path_type type,
-  libd_filesystem_env_getter_f env_getter)
+  libd_filesystem_env_get_f env_getter)
 {
-  if (out_fp == NULL || raw_path == NULL) {
+  if (out_fp == NULL || raw_path == NULL || raw_path[0] == NULL_TERMINATOR) {
     return libd_invalid_parameter;
   }
 
   enum libd_result r;
   struct filepath_resolver* fpr;
 
-  r = libd_filepath_resolver_init(&fpr, raw_path, type);
+  r = libd_filepath_resolver_create(&fpr, raw_path, type);
   if (r != 0) {
     return r;
   }
@@ -44,12 +50,12 @@ libd_filesystem_path_init(
     goto cleanup;
   }
 
-  r = libd_filepath_resolver_dump(fpr, out_fp);
+  r = libd_filepath_resolver_dump_to_filepath(fpr, out_fp);
   if (r != 0) {
     goto cleanup;
   }
 
 cleanup:
-  libd_filepath_resolver_release(fpr);
+  libd_filepath_resolver_destroy(fpr);
   return r;
 }

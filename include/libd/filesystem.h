@@ -9,6 +9,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 
 //==============================================================================
 // Filesystem types
@@ -18,14 +19,20 @@
  * @brief Opaque type for libd_filesystem_path_s. Is used for path operations
  * with a safe, managed abstraction.
  */
-typedef struct filepath libd_filesystem_path_h;
+typedef struct filepath libd_filepath_h;
 
 /**
  * @brief Signature for generic environment variable getter.
  * @param var The key for the environment variable.
  * @return The value associated with the environment variable.
  */
-typedef const char* (*libd_filesystem_env_getter_f)(const char* key);
+typedef const char* (*libd_filesystem_env_get_f)(const char* key);
+
+/**
+ * @brief Possibly frees memory allocated by libd_filesystem_env_get_f.
+ * @param var Pointer to the allocated memory.
+ */
+typedef void (*libd_filesystem_env_get_free_f)(const char* var);
 
 /**
  * @brief Used in the initialization of a path object to clarify the type of
@@ -38,14 +45,23 @@ enum libd_filesystem_path_type {
   libd_abs_file      = 1,  // 0b0001
   libd_rel_directory = 2,  // 0b0010
   libd_abs_directory = 3,  // 0b0011
+  //
+  libd_filesystem_path_type_count,
 };
 
-#define LIBD_PF_FS_IS_ABS 1  // bit 0
-#define LIBD_PF_FS_IS_DIR 2  // bit 1
+#define LIBD_FILEPATH_IS_ABS 1  // bit 0
+#define LIBD_FILEPATH_IS_DIR 2  // bit 1
 
 //==============================================================================
 // Path API
 //==============================================================================
+
+/**
+ * @brief Gets the allocation size needed for the opaque handle.
+ * @return allocation size in bytes.
+ */
+size_t
+libd_filesystem_filepath_get_required_size(void);
 
 /**
  * @brief Normalizes and initialize a raw path into a path object.
@@ -56,11 +72,11 @@ enum libd_filesystem_path_type {
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
 enum libd_result
-libd_filesystem_path_init(
-  libd_filesystem_path_h* out_path,
+libd_filesystem_filepath_init(
+  libd_filepath_h* out_path,
   const char* raw_path,
   enum libd_filesystem_path_type type,
-  libd_filesystem_env_getter_f env_getter);
+  libd_filesystem_env_get_f env_getter);
 
 /**
  * @brief Join two paths and initialize into the out parameter.
@@ -69,11 +85,11 @@ libd_filesystem_path_init(
  * @param rhs_path Path to join with (right hand side).
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filesystem_path_h
-libd_filesystem_path_join(
-  libd_filesystem_path_h* out_path,
-  const libd_filesystem_path_h* lhs_path,
-  const libd_filesystem_path_h* rhs_path);
+libd_filepath_h
+libd_filesystem_filepath_join(
+  libd_filepath_h* out_path,
+  const libd_filepath_h* lhs_path,
+  const libd_filepath_h* rhs_path);
 
 /**
  * @brief Join two paths and mutate the lhs path with the result.
@@ -81,10 +97,10 @@ libd_filesystem_path_join(
  * @param rhs_path Path to append.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filesystem_path_h
-libd_filesystem_path_append(
-  libd_filesystem_path_h* lhs_path,
-  const libd_filesystem_path_h* rhs_path);
+libd_filepath_h
+libd_filesystem_filepath_append(
+  libd_filepath_h* lhs_path,
+  const libd_filepath_h* rhs_path);
 
 /**
  * @brief Gets the nth ancestor of the given path and initializes a new path
@@ -94,10 +110,10 @@ libd_filesystem_path_append(
  * @param n How many ancestors up to walk.
  * return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filesystem_path_h
-libd_filesystem_path_ancestor(
-  libd_filesystem_path_h* out_path,
-  const libd_filesystem_path_h* start_path,
+libd_filepath_h
+libd_filesystem_filepath_ancestor(
+  libd_filepath_h* out_path,
+  const libd_filepath_h* start_path,
   uint16_t n);
 
 /**
@@ -110,11 +126,11 @@ libd_filesystem_path_ancestor(
  * @param child_path The potential child/descendant path to check.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filesystem_path_h
-libd_filesystem_path_is_subpath_of(
+libd_filepath_h
+libd_filesystem_filepath_is_subpath_of(
   bool* out_is_subpath,
-  const libd_filesystem_path_h* parent_path,
-  const libd_filesystem_path_h* child_path);
+  const libd_filepath_h* parent_path,
+  const libd_filepath_h* child_path);
 
 /**
  * @brief Checks if two paths are equal. The comparison is case-insensitive on
@@ -125,11 +141,11 @@ libd_filesystem_path_is_subpath_of(
  * @param path2 Second path to compare.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filesystem_path_h
-libd_filesystem_path_is_equal(
+libd_filepath_h
+libd_filesystem_filepath_is_equal(
   bool* out_is_equal,
-  const libd_filesystem_path_h* left_path,
-  const libd_filesystem_path_h* right_path);
+  const libd_filepath_h* left_path,
+  const libd_filepath_h* right_path);
 
 /**
  * @brief Puts the filename into an out parameter if it exists. Will fail if
@@ -138,10 +154,10 @@ libd_filesystem_path_is_equal(
  * @param filename_path Path object to extract the filename from.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filesystem_path_h
-libd_filesystem_path_filename(
-  libd_filesystem_path_h* out_path,
-  const libd_filesystem_path_h* filename_path);
+libd_filepath_h
+libd_filesystem_filepath_filename(
+  libd_filepath_h* out_path,
+  const libd_filepath_h* filename_path);
 
 /**
  * @brief Returns a pointer to the internal path string.
@@ -149,7 +165,7 @@ libd_filesystem_path_filename(
  * @return pointer to the internal path string.
  */
 const char*
-libd_filesystem_path_string(libd_filesystem_path_h* path);
+libd_filesystem_filepath_string(libd_filepath_h* path);
 
 // get extension
 

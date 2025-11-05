@@ -3,6 +3,7 @@ internal_includes = []
 
 libs = [
   'memory',
+  'filesystem',
   # 'platform',
   # 'errors',
 ]

@@ -19,12 +19,23 @@
   #define LIBD_TESTING_ABORT_ON_FAIL 1
 #endif
 
+#ifndef LIBD_USED
+  #if defined(__GNUC__) || defined(__clang__)
+    #define LIBD_USED __attribute__((used))
+  #elif defined(_MSC_VER)
+    /* MSVC doesn't have a direct equivalent; force reference retention. */
+    #define LIBD_USED __pragma(warning(suppress : 4505))
+  #else
+    #define LIBD_USED /* no-op on unknown compilers */
+  #endif
+#endif
+
 enum libd_test_code {
-  test_ok,
-  test_fail,
-  test_skipped,
+  libd_test_ok,
+  libd_test_fail,
+  libd_test_skipped,
   //
-  test_result_count,
+  libd_test_result_count,
 };
 
 /**
@@ -66,6 +77,7 @@ register_test(struct libd_test_entry* entry)
     .f    = _func_##test_name,                         \
     .next = NULL,                                      \
   };                                                   \
+  LIBD_USED                                            \
   static void _register_##test_name(void)              \
   {                                                    \
     register_test(&_entry_##test_name);                \

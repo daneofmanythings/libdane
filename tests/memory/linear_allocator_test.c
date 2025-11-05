@@ -1,6 +1,6 @@
 #include "../../include/libd/memory.h"
 #include "../../include/libd/testing.h"
-#include "../../src/memory/internal/align_compat.h"
+#include "../../include/libd/utils/align_compat.h"
 
 #include <stddef.h>
 #include <stdint.h>

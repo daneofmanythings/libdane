@@ -8,13 +8,6 @@
 
 #include "../../../include/libd/memory.h"
 
-enum libd_allocator_wrapper_result {
-  ok,
-  eof,
-  oveflow,
-  enomem,
-};
-
 struct filepath_allocator_wrapper {
   libd_linear_allocator_h* a;
 };
@@ -24,7 +17,7 @@ typedef void* (*alloc_f)(
   size_t);
 typedef void (*reset_f)(struct filepath_allocator_wrapper*);
 
-enum libd_allocator_wrapper_result
+enum libd_result
 libd_allocator_wrapper_create(
   struct filepath_allocator_wrapper* allocator,
   size_t size,
