@@ -65,6 +65,7 @@ libd_make_path_token_node(
   size_t scan_pos,
   struct filepath_allocator* fpa);
 struct path_token_node*
+
 libd_tokenize_from_string( // FIX: this needs error handling
   const char* src,
   struct filepath_allocator* fpa)
@@ -104,6 +105,7 @@ libd_make_component_token(
   size_t scan_pos,
   struct filepath_allocator* fpa);
 static struct path_token_node*
+
 libd_make_path_token_node( // FIX: this needs error handling
   const char* src,
   size_t scan_pos,
@@ -112,10 +114,8 @@ libd_make_path_token_node( // FIX: this needs error handling
   switch (src[scan_pos]) {
   case PATH_SEPARATOR:
     return libd_make_separator_token(fpa);
-    break;
   case NULL_TERMINATOR:
     return libd_make_eof_token(fpa);
-    break;
   default:
     return libd_make_component_token(src, scan_pos, fpa);
   }
@@ -210,7 +210,7 @@ libd_filepath_resolver_expand( // FIX: error handling
     }
 
     new_node->next = curr_node->next;
-    curr_node      = new_node;
+    curr_node      = temp;
   }
 
   return libd_ok;
