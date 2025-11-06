@@ -1,7 +1,7 @@
 #include "../../include/libd/platform/filesystem.h"
 #include "../../include/libd/utils/align_compat.h"
+#include "./filepath.h"
 #include "./internal/platform_wrap.h"
-#include "filepath.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -127,9 +127,12 @@ libd_make_separator_token(struct filepath_allocator* fpa)
   struct path_token_node* node = (struct path_token_node*)fpa->alloc(
     &fpa->wrapper, sizeof(*node) + PATH_SEPARATOR_VALUE_LEN);
 
-  node->type = separator_type;
-  memcpy(node->value, PATH_SEPARATOR_VALUE, 2);  // maybe parameterize length
-  node->val_len = 1;
+  node->prev     = NULL;
+  node->next     = NULL;
+  node->type     = separator_type;
+  node->value[0] = PATH_SEPARATOR;
+  node->value[1] = NULL_TERMINATOR;
+  node->val_len  = 1;
 
   return node;
 }
@@ -140,6 +143,8 @@ libd_make_eof_token(struct filepath_allocator* fpa)
   struct path_token_node* node =
     (struct path_token_node*)fpa->alloc(&fpa->wrapper, sizeof(*node) + 1);
 
+  node->prev     = NULL;
+  node->next     = NULL;
   node->type     = eof_type;
   node->value[0] = NULL_TERMINATOR;
   node->val_len  = 0;
@@ -162,6 +167,8 @@ libd_make_component_token(
   struct path_token_node* node = (struct path_token_node*)fpa->alloc(
     &fpa->wrapper, sizeof(*node) + component_length + 1);
 
+  node->prev = NULL;
+  node->next = NULL;
   node->type = component_type;
   memcpy(node->value, &src[component_start], component_length);
   node->value[component_length] = NULL_TERMINATOR;
@@ -173,10 +180,15 @@ libd_make_component_token(
 enum libd_result
 libd_filepath_resolver_expand( // FIX: error handling
   struct filepath_resolver* fpr,
-  libd_filesystem_env_get_f env_getter)
+  libd_filesystem_env_get_f env_get)
 {
   struct path_token_node* curr_node = fpr->head;
   struct path_token_node* temp      = NULL;
+
+  char env_val[256] = { 0 };
+
+  enum libd_result result = libd_ok;
+
   while (curr_node->type != eof_type) {
     bool is_env_var = platform_is_env_var(curr_node->value);
 
@@ -185,13 +197,13 @@ libd_filepath_resolver_expand( // FIX: error handling
       continue;
     }
 
-    const char* env_var_str = env_getter(curr_node->value);
-    // TODO: validate env_var_str
+    result = platform_env_var_get(env_val, curr_node->value, env_get);
+    if (result != libd_ok) {
+      break;
+    }
 
     struct path_token_node* new_node =
-      libd_tokenize_from_string(env_var_str, &fpr->allocator);
-
-    platform_env_var_mem_free(env_var_str);
+      libd_tokenize_from_string(env_val, &fpr->allocator);
 
     if (curr_node->prev) {
       curr_node->prev->next = new_node;
@@ -212,8 +224,12 @@ libd_filepath_resolver_expand( // FIX: error handling
     new_node->next = curr_node->next;
     curr_node      = temp;
   }
+  while (curr_node->prev != NULL) {
+    curr_node = curr_node->prev;
+  }
+  fpr->head = curr_node;
 
-  return libd_ok;
+  return result;
 }
 
 enum libd_result

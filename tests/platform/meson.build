@@ -1,8 +1,5 @@
 platform_test_sources = files(
-  'unit/parsing_test.c',
-  'path_test.c',
   'test_main.c',
-  'thread_local_storage_test.c',
 )
 
 platform_tests = executable(

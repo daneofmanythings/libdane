@@ -1,11 +1,11 @@
 test_sources = [
   'memory',
-  'filesystem',
   # 'platform',
+  'filesystem',
   # 'errors',
 ]
 
-test_args = []
+test_args = ['-g']
 
 foreach dir : test_sources
   subdir(dir)

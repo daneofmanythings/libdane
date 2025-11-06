@@ -1,19 +1,18 @@
 #include "./platform_wrap.h"
 
-// TODO:
+#include "../../../include/libd/platform/filesystem.h"
+
 bool
-platform_is_env_var(const char* val)
+platform_is_env_var(const char* key)
 {
-  bool result = false;
-  if (*val == '$') {
-    result = true;
-  }
-  return result;
+  return libd_platform_filesystem_is_env_var(key);
 }
 
-// TODO:
-void
-platform_env_var_mem_free(const char* env_var_str)
+enum libd_result
+platform_env_var_get(
+  char* out_val,
+  const char* env_key,
+  libd_filesystem_env_get_f env_getter)
 {
-  return;
+  return libd_platform_filesystem_env_var_get(out_val, env_key, env_getter);
 }

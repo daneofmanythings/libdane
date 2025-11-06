@@ -14,7 +14,8 @@ host_system = host_machine.system()
 
 if host_system in system_posix
   platform_sources += files(
-    'src/posix/thread_local_storage.c',
+    'posix/env_var.c',
+    'posix/thread_local_storage.c',
   )
 else
   error('Unsupported platform: ' + host_system)

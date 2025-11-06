@@ -22,17 +22,20 @@
 typedef struct filepath libd_filepath_h;
 
 /**
- * @brief Signature for generic environment variable getter.
- * @param var The key for the environment variable.
- * @return The value associated with the environment variable.
+ * @brief Signature for a get env wrapper. Consumer implemented.
+ * @param out Out parameter to the memory to store the val.
+ * @param key The key for the environment variable.
+ * @return result code for the operation.
  */
-typedef const char* (*libd_filesystem_env_get_f)(const char* key);
+typedef enum libd_result (*libd_filesystem_env_get_f)(
+  char* out,
+  const char* key);
 
 /**
  * @brief Possibly frees memory allocated by libd_filesystem_env_get_f.
  * @param var Pointer to the allocated memory.
  */
-typedef void (*libd_filesystem_env_get_free_f)(const char* var);
+typedef void (*libd_filesystem_env_free_f)(const char* var);
 
 /**
  * @brief Used in the initialization of a path object to clarify the type of
@@ -41,8 +44,8 @@ typedef void (*libd_filesystem_env_get_free_f)(const char* var);
  * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
  */
 enum libd_filesystem_path_type {
-  libd_rel_file      = 0,  // 0b0000
-  libd_abs_file      = 1,  // 0b0001
+  libd_rel_file = 0,       // 0b0000
+  libd_abs_file = 1,       // 0b0001
   libd_rel_directory = 2,  // 0b0010
   libd_abs_directory = 3,  // 0b0011
   //

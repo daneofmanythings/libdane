@@ -123,8 +123,10 @@ TEST(filepath_resolver_tokenize)
   }
 }
 
-static const char*
-test_env_getter(const char* key);
+enum libd_result
+test_env_getter(
+  char* out_val,
+  const char* key);
 
 TEST(filepath_resolver_expand)
 {
@@ -152,10 +154,26 @@ TEST(filepath_resolver_expand)
     {
       .name="two expansions\0",
       .input_src = "/$two\0", // FIX: this test is posix specific :(
-      .expected_token_count = 3,
+      .expected_token_count = 5,
       .expected_tokens = {
         {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
         {.type=component_type, .val="zero\0" },
+        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
+        {.type=component_type, .val="zero\0" },
+        {.type=eof_type, .val = "\0" },
+      },
+    },
+    {
+      .name="three expansions\0",
+      .input_src = "$three/\0", // FIX: this test is posix specific :(
+      .expected_token_count = 7,
+      .expected_tokens = {
+        {.type=component_type, .val="zero\0" },
+        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
+        {.type=component_type, .val="zero\0" },
+        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
+        {.type=component_type, .val="zero\0" },
+        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
         {.type=eof_type, .val = "\0" },
       },
     },
@@ -171,6 +189,7 @@ TEST(filepath_resolver_expand)
     struct path_token_node* head = fpr->head;
 
     for (size_t j = 0; j < tcs->expected_token_count; j += 1) {
+      ASSERT_NOT_NULL(head);
       ASSERT_EQ_U(head->type, tcs[i].expected_tokens[j].type);
       ASSERT_EQ_STR(head->value, tcs[i].expected_tokens[j].val);
       head = head->next;
@@ -180,14 +199,23 @@ TEST(filepath_resolver_expand)
   }
 }
 
-static const char*
-test_env_getter(const char* key)
+enum libd_result
+test_env_getter(
+  char* out_val,
+  const char* key)
 {
-  if (strcmp(key, "$one\0") == 0) {
-    return "zero\0";
+  if (strcmp(key, "one\0") == 0) {
+    strcpy(out_val, "zero\0");
+    return libd_ok;
   }
-  if (strcmp(key, "$two\0") == 0) {
-    return "$one\0";
+  if (strcmp(key, "two\0") == 0) {
+    strcpy(out_val, "$one/zero\0");
+    return libd_ok;
   }
-  return "\0";
+  if (strcmp(key, "three\0") == 0) {
+    strcpy(out_val, "$two/$one\0");
+    return libd_ok;
+  }
+
+  return libd_env_var_not_found;
 }
