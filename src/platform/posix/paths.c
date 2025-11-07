@@ -1,5 +1,6 @@
 #include "../../../include/libd/platform/filesystem.h"
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
@@ -68,4 +69,60 @@ libd_platform_filesystem_env_var_get(
   }
 
   return r;
+}
+
+static bool
+is_component_value_delimeter_valid(
+  const char* value,
+  size_t i);
+static bool
+is_dashes_valid(
+  const char* value,
+  size_t i);
+
+bool
+libd_plaform_filesystem_is_explicit_component_value_valid(const char* value)
+{
+  if (*value == '.') {
+    value += 1;
+  }
+
+  for (size_t i = 0; value[i] != '\0'; i += 1) {
+    char c = value[i];
+    switch (c) {
+    case '.':
+    case '-':
+    case '_':
+      if (!is_component_value_delimeter_valid(value, i)) {
+        return false;
+      }
+      break;
+    default:
+      if (!isalnum(c)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+static bool
+is_component_value_delimeter_valid(
+  const char* value,
+  size_t i)
+{
+  if (i == 0) {
+    return false;
+  }
+
+  if (value[i + 1] == NULL_TERMINATOR) {
+    return false;
+  }
+
+  if (!isalpha(value[i - 1] || !isalpha(value[i + 1]))) {
+    return false;
+  }
+
+  return true;
 }

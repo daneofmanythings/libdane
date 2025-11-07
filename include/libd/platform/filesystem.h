@@ -73,4 +73,8 @@ libd_platform_filesystem_env_var_get(
   enum libd_result (*env_getter)(
     char*,
     const char*));
+
+bool
+libd_plaform_filesystem_is_explicit_component_value_valid(const char* value);
+
 #endif  // LIBD_PLATFORM_FILESYSTEM_H

@@ -7,6 +7,7 @@
 #define LIBD_TESTING_H
 
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -102,7 +103,17 @@ register_test(struct libd_test_entry* entry)
   return 0;                                  \
   }
 
-#define ASSERT_OP(lhs, op, rhs, type, repr)                             \
+#define _ASSERT_COUNT(                                                 \
+  _1, _2, _3, _4, _5, _6, _7, _8, _9, _A, _B, _C, _D, _E, _F, _N, ...) \
+  _N
+#define _ASSERT_ARGN(...)                                                    \
+  _ASSERT_COUNT(__VA_ARGS__, F, E, D, C, B, A, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
+#define _ASSERT_CAT0(x, y) x##y
+#define _ASSERT_CAT1(x, y) _ASSERT_CAT0(x, y)
+#define _ASSERT_DISPATCH(f, ...)                          \
+  _ASSERT_CAT1(f, _ASSERT_ARGN(__VA_ARGS__))(__VA_ARGS__)
+
+#define ASSERT_OP_IMPL(lhs, op, rhs, type, repr, has_fmt, ...)          \
   do {                                                                  \
     type _lhs = (type)(lhs);                                            \
     type _rhs = (type)(rhs);                                            \
@@ -117,52 +128,100 @@ register_test(struct libd_test_entry* entry)
         _rhs,                                                           \
         __FILE__,                                                       \
         __LINE__);                                                      \
+      if (has_fmt) {                                                    \
+        fprintf(stderr, __VA_ARGS__);                                   \
+      }                                                                 \
       if (LIBD_TESTING_ABORT_ON_FAIL) {                                 \
         abort();                                                        \
       }                                                                 \
     }                                                                   \
   } while (0)
 
-#define ASSERT_EQ(lhs, rhs, type, repr) ASSERT_OP(lhs, ==, rhs, type, repr)
-#define ASSERT_NE(lhs, rhs, type, repr) ASSERT_OP(lhs, !=, rhs, type, repr)
-#define ASSERT_LT(lhs, rhs, type, repr) ASSERT_OP(lhs, <, rhs, type, repr)
-#define ASSERT_LE(lhs, rhs, type, repr) ASSERT_OP(lhs, <=, rhs, type, repr)
-#define ASSERT_GT(lhs, rhs, type, repr) ASSERT_OP(lhs, >, rhs, type, repr)
-#define ASSERT_GE(lhs, rhs, type, repr) ASSERT_OP(lhs, >=, rhs, type, repr)
+#define ASSERT_OP_5(lhs, op, rhs, type, repr) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 0)
 
-#define ASSERT_TRUE(expr)  ASSERT_EQ(expr, 1, int, "%d")
-#define ASSERT_FALSE(expr) ASSERT_EQ(expr, 0, int, "%d")
+#define ASSERT_OP_6(lhs, op, rhs, type, repr, fmt) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt)
 
-#define ASSERT_ZERO(expr)    ASSERT_FALSE(expr)
-#define ASSERT_NONZERO(expr) ASSERT_NE(expr, 0, int, "%d")
+#define ASSERT_OP_7(lhs, op, rhs, type, repr, fmt, a1) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1)
 
-#define ASSERT_OK(expr) ASSERT_EQ(expr, 0, int, "%d")
+#define ASSERT_OP_8(lhs, op, rhs, type, repr, fmt, a1, a2) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1, a2)
 
-#define ASSERT_EQ_U(lhs, rhs) ASSERT_EQ(lhs, rhs, uint64_t, "%" PRIu64)
-#define ASSERT_NE_U(lhs, rhs) ASSERT_NE(lhs, rhs, uint64_t, "%" PRIu64)
-#define ASSERT_LT_U(lhs, rhs) ASSERT_LT(lhs, rhs, uint64_t, "%" PRIu64)
-#define ASSERT_LE_U(lhs, rhs) ASSERT_LE(lhs, rhs, uint64_t, "%" PRIu64)
-#define ASSERT_GT_U(lhs, rhs) ASSERT_GT(lhs, rhs, uint64_t, "%" PRIu64)
-#define ASSERT_GE_U(lhs, rhs) ASSERT_GE(lhs, rhs, uint64_t, "%" PRIu64)
+#define ASSERT_OP_9(lhs, op, rhs, type, repr, fmt, a1, a2, a3) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3)
 
-#define ASSERT_EQ_S(lhs, rhs) ASSERT_EQ(lhs, rhs, int64_t, "%" PRId64)
-#define ASSERT_NE_S(lhs, rhs) ASSERT_NE(lhs, rhs, int64_t, "%" PRId64)
-#define ASSERT_LT_S(lhs, rhs) ASSERT_LT(lhs, rhs, int64_t, "%" PRId64)
-#define ASSERT_LE_S(lhs, rhs) ASSERT_LE(lhs, rhs, int64_t, "%" PRId64)
-#define ASSERT_GT_S(lhs, rhs) ASSERT_GT(lhs, rhs, int64_t, "%" PRId64)
-#define ASSERT_GE_S(lhs, rhs) ASSERT_GE(lhs, rhs, int64_t, "%" PRId64)
+#define ASSERT_OP_A(lhs, op, rhs, type, repr, fmt, a1, a2, a3, a4) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3, a4)
 
-#define ASSERT_EQ_PTR(lhs, rhs) ASSERT_EQ(lhs, rhs, void*, "%p")
-#define ASSERT_NE_PTR(lhs, rhs) ASSERT_NE(lhs, rhs, void*, "%p")
-#define ASSERT_NULL(ptr)        ASSERT_EQ_PTR(ptr, NULL)
-#define ASSERT_NOT_NULL(ptr)    ASSERT_NE_PTR(ptr, NULL)
+#define ASSERT_OP_B(lhs, op, rhs, type, repr, fmt, a1, a2, a3, a4, a5) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3, a4, a5)
 
-#define ASSERT_EQ_MEM(lhs, rhs, len)                              \
+#define ASSERT_OP_C(lhs, op, rhs, type, repr, fmt, a1, a2, a3, a4, a5, a6) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3, a4, a5, a6)
+
+#define ASSERT_OP_D(lhs, op, rhs, type, repr, fmt, a1, a2, a3, a4, a5, a6, a7) \
+  ASSERT_OP_IMPL(lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3, a4, a5, a6, a7)
+
+#define ASSERT_OP_E(                                                  \
+  lhs, op, rhs, type, repr, fmt, a1, a2, a3, a4, a5, a6, a7, a8)      \
+  ASSERT_OP_IMPL(                                                     \
+    lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3, a4, a5, a6, a7, a8)
+
+#define ASSERT_OP_F(                                                      \
+  lhs, op, rhs, type, repr, fmt, a1, a2, a3, a4, a5, a6, a7, a8, a9)      \
+  ASSERT_OP_IMPL(                                                         \
+    lhs, op, rhs, type, repr, 1, fmt, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+
+#define ASSERT_OP(...) _ASSERT_DISPATCH(ASSERT_OP_, __VA_ARGS__)
+
+#define ASSERT_TRUE(expr, ...)  ASSERT_OP(expr, ==, 1, int, "%d", ##__VA_ARGS__)
+#define ASSERT_FALSE(expr, ...) ASSERT_OP(expr, ==, 0, int, "%d", ##__VA_ARGS__)
+#define ASSERT_ZERO(expr, ...)  ASSERT_OP(expr, ==, 0, int, "%d", ##__VA_ARGS__)
+#define ASSERT_NONZERO(expr, ...)                  \
+  ASSERT_OP(expr, !=, 0, int, "%d", ##__VA_ARGS__)
+#define ASSERT_OK(expr, ...) ASSERT_OP(expr, ==, 0, int, "%d", ##__VA_ARGS__)
+
+#define ASSERT_EQ_U(lhs, rhs, ...)                             \
+  ASSERT_OP(lhs, ==, rhs, uint64_t, "%" PRIu64, ##__VA_ARGS__)
+#define ASSERT_NE_U(lhs, rhs, ...)                             \
+  ASSERT_OP(lhs, !=, rhs, uint64_t, "%" PRIu64, ##__VA_ARGS__)
+#define ASSERT_LT_U(lhs, rhs, ...)                            \
+  ASSERT_OP(lhs, <, rhs, uint64_t, "%" PRIu64, ##__VA_ARGS__)
+#define ASSERT_LE_U(lhs, rhs, ...)                             \
+  ASSERT_OP(lhs, <=, rhs, uint64_t, "%" PRIu64, ##__VA_ARGS__)
+#define ASSERT_GT_U(lhs, rhs, ...)                            \
+  ASSERT_OP(lhs, >, rhs, uint64_t, "%" PRIu64, ##__VA_ARGS__)
+#define ASSERT_GE_U(lhs, rhs, ...)                             \
+  ASSERT_OP(lhs, >=, rhs, uint64_t, "%" PRIu64, ##__VA_ARGS__)
+
+#define ASSERT_EQ_S(lhs, rhs, ...)                            \
+  ASSERT_OP(lhs, ==, rhs, int64_t, "%" PRId64, ##__VA_ARGS__)
+#define ASSERT_NE_S(lhs, rhs, ...)                            \
+  ASSERT_OP(lhs, !=, rhs, int64_t, "%" PRId64, ##__VA_ARGS__)
+#define ASSERT_LT_S(lhs, rhs, ...)                           \
+  ASSERT_OP(lhs, <, rhs, int64_t, "%" PRId64, ##__VA_ARGS__)
+#define ASSERT_LE_S(lhs, rhs, ...)                             \
+  ASSERT_OP(lhs, <=, rhs, int64_t, "%", PRId64, ##__VA_ARGS__)
+#define ASSERT_GT_S(lhs, rhs, ...)                           \
+  ASSERT_OP(lhs, >, rhs, int64_t, "%" PRId64, ##__VA_ARGS__)
+#define ASSERT_GE_S(lhs, rhs, ...)                            \
+  ASSERT_OP(lhs, >=, rhs, int64_t, "%" PRId64, ##__VA_ARGS__)
+
+#define ASSERT_EQ_PTR(lhs, rhs, ...)                  \
+  ASSERT_OP(lhs, ==, rhs, void*, "%p", ##__VA_ARGS__)
+#define ASSERT_NE_PTR(lhs, rhs, ...)                  \
+  ASSERT_OP(lhs, !=, rhs, void*, "%p", ##__VA_ARGS__)
+#define ASSERT_NULL(ptr, ...)     ASSERT_EQ_PTR(ptr, NULL, ##__VA_ARGS__)
+#define ASSERT_NOT_NULL(ptr, ...) ASSERT_NE_PTR(ptr, NULL, ##__VA_ARGS__)
+
+#define ASSERT_MEM_IMPL(pred, lhs, rhs, len, has_fmt, ...)        \
   do {                                                            \
     const void* _lhs = (void*)(lhs);                              \
     const void* _rhs = (void*)(rhs);                              \
     size_t _len      = (len);                                     \
-    if ((memcmp(_lhs, _rhs, _len)) != 0) {                        \
+    if (!(pred(_lhs, _rhs, _len))) {                              \
       fprintf(                                                    \
         stderr,                                                   \
         "Assertion failed: (%s) != (%s) ( %p vs %p ) at %s:%d\n", \
@@ -172,21 +231,73 @@ register_test(struct libd_test_entry* entry)
         _rhs,                                                     \
         __FILE__,                                                 \
         __LINE__);                                                \
+      if (has_fmt) {                                              \
+        fprintf(stderr, __VA_ARGS__);                             \
+      }                                                           \
       if (LIBD_TESTING_ABORT_ON_FAIL) {                           \
         abort();                                                  \
       }                                                           \
     }                                                             \
   } while (0)
 
+#define ASSERT_MEM_4(pred, lhs, rhs, len) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 0)
+
+#define ASSERT_MEM_5(pred, lhs, rhs, len, fmt) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt)
+
+#define ASSERT_MEM_6(pred, lhs, rhs, len, fmt, a1) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1)
+
+#define ASSERT_MEM_7(pred, lhs, rhs, len, fmt, a1, a2) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2)
+
+#define ASSERT_MEM_8(pred, lhs, rhs, len, fmt, a1, a2, a3) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2, a3)
+
+#define ASSERT_MEM_9(pred, lhs, rhs, len, fmt, a1, a2, a3, a4) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2, a3, a4)
+
+#define ASSERT_MEM_A(pred, lhs, rhs, len, fmt, a1, a2, a3, a4, a5) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2, a3, a4, a5)
+
+#define ASSERT_MEM_B(pred, lhs, rhs, len, fmt, a1, a2, a3, a4, a5, a6) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2, a3, a4, a5, a6)
+
+#define ASSERT_MEM_C(pred, lhs, rhs, len, fmt, a1, a2, a3, a4, a5, a6, a7) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2, a3, a4, a5, a6, a7)
+
+#define ASSERT_MEM_D(pred, lhs, rhs, len, fmt, a1, a2, a3, a4, a5, a6, a7, a8) \
+  ASSERT_MEM_IMPL(pred, lhs, rhs, len, 1, fmt, a1, a2, a3, a4, a5, a6, a7, a8)
+
+#define ASSERT_MEM_E(                                                \
+  pred, lhs, rhs, len, fmt, a1, a2, a3, a4, a5, a6, a7, a8, a9)      \
+  ASSERT_MEM_IMPL(                                                   \
+    pred, lhs, rhs, len, 1, fmt, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+
+#define ASSERT_MEM(...) _ASSERT_DISPATCH(ASSERT_MEM_, __VA_ARGS__)
+
+static inline bool
+_is_mem_equal(
+  const void* mem1,
+  const void* mem2,
+  size_t len)
+{
+  return memcmp(mem1, mem2, len) == 0;
+}
+
+#define ASSERT_EQ_MEM(lhs, rhs, len, ...)                 \
+  ASSERT_MEM(_is_mem_equal, lhs, rhs, len, ##__VA_ARGS__)
+
 /*
  * maybe add mem: NE, zero'd
  */
 
-#define ASSERT_EQ_STR(lhs, rhs)                               \
+#define ASSERT_STR_IMPL(pred, lhs, rhs, has_fmt, ...)         \
   do {                                                        \
     const char* _lhs = (lhs);                                 \
     const char* _rhs = (rhs);                                 \
-    if ((strcmp(_lhs, _rhs)) != 0) {                          \
+    if (!pred(_lhs, _rhs)) {                                  \
       fprintf(                                                \
         stderr,                                               \
         "Assertion failed: %s != %s ( %s vs %s ) at %s:%d\n", \
@@ -196,11 +307,59 @@ register_test(struct libd_test_entry* entry)
         _rhs,                                                 \
         __FILE__,                                             \
         __LINE__);                                            \
+      if (has_fmt) {                                          \
+        fprintf(stderr, __VA_ARGS__);                         \
+      }                                                       \
       if (LIBD_TESTING_ABORT_ON_FAIL) {                       \
         abort();                                              \
       }                                                       \
     }                                                         \
   } while (0)
+
+#define ASSERT_STR_3(pred, lhs, rhs) ASSERT_STR_IMPL(pred, lhs, rhs, 0)
+
+#define ASSERT_STR_4(pred, lhs, rhs, fmt) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt)
+
+#define ASSERT_STR_5(pred, lhs, rhs, fmt, a1) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1)
+
+#define ASSERT_STR_6(pred, lhs, rhs, fmt, a1, a2) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2)
+
+#define ASSERT_STR_7(pred, lhs, rhs, fmt, a1, a2, a3) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3)
+
+#define ASSERT_STR_8(pred, lhs, rhs, fmt, a1, a2, a3, a4) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3, a4)
+
+#define ASSERT_STR_9(pred, lhs, rhs, fmt, a1, a2, a3, a4, a5) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3, a4, a5)
+
+#define ASSERT_STR_A(pred, lhs, rhs, fmt, a1, a2, a3, a4, a5, a6) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3, a4, a5, a6)
+
+#define ASSERT_STR_B(pred, lhs, rhs, fmt, a1, a2, a3, a4, a5, a6, a7) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3, a4, a5, a6, a7)
+
+#define ASSERT_STR_C(pred, lhs, rhs, fmt, a1, a2, a3, a4, a5, a6, a7, a8) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3, a4, a5, a6, a7, a8)
+
+#define ASSERT_STR_D(pred, lhs, rhs, fmt, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
+  ASSERT_STR_IMPL(pred, lhs, rhs, 1, fmt, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+
+#define ASSERT_STR(...) _ASSERT_DISPATCH(ASSERT_STR_, __VA_ARGS__)
+
+static inline bool
+_is_str_eq(
+  const char* s1,
+  const char* s2)
+{
+  return strcmp(s1, s2) == 0;
+}
+
+#define ASSERT_STR_EQ(lhs, rhs, ...)              \
+  ASSERT_STR(_is_str_eq, lhs, rhs, ##__VA_ARGS__)
 
 /*
  * maybe add str: NE, substring, startswith, empty, not empty

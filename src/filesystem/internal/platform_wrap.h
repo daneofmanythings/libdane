@@ -14,4 +14,7 @@ platform_env_var_get(
   const char* env_key,
   libd_filesystem_env_get_f env_getter);
 
+bool
+plaform_is_component_value_valid(const char* value);
+
 #endif  // FILESYSTEM_PATH_PLATFORM_WRAP_H

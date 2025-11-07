@@ -16,3 +16,9 @@ platform_env_var_get(
 {
   return libd_platform_filesystem_env_var_get(out_val, env_key, env_getter);
 }
+
+bool
+plaform_is_component_value_valid(const char* value)
+{
+  return libd_plaform_filesystem_is_explicit_component_value_valid(value);
+}

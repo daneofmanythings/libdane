@@ -128,72 +128,60 @@ test_env_getter(
   char* out_val,
   const char* key);
 
+void
+test_filepath_resolver_dump_path_string(
+  struct filepath_resolver* fpr,
+  char* dest);
+
 TEST(filepath_resolver_expand)
 {
-  struct token {
-    u8 type;
-    char* val;
-  };
-
   struct test_case {
     char* name;
     char* input_src;
-    u8 expected_token_count;
-    struct token expected_tokens[16];
+    const char* expected_value;
   } tcs[] = {
     {
-      .name="one expansion\0",
-      .input_src = "/$one\0", // FIX: this test is posix specific :(
-      .expected_token_count = 3,
-      .expected_tokens = {
-        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
-        {.type=component_type, .val="zero\0" },
-        {.type=eof_type, .val = "\0" },
-      },
+      .name           = "one expansion\0",
+      .input_src      = "/$one\0",
+      .expected_value = "/zero\0",
     },
     {
-      .name="two expansions\0",
-      .input_src = "/$two\0", // FIX: this test is posix specific :(
-      .expected_token_count = 5,
-      .expected_tokens = {
-        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
-        {.type=component_type, .val="zero\0" },
-        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
-        {.type=component_type, .val="zero\0" },
-        {.type=eof_type, .val = "\0" },
-      },
+      .name           = "two expansions\0",
+      .input_src      = "/$two\0",
+      .expected_value = "/zero/zero\0",
     },
     {
-      .name="three expansions\0",
-      .input_src = "$three/\0", // FIX: this test is posix specific :(
-      .expected_token_count = 7,
-      .expected_tokens = {
-        {.type=component_type, .val="zero\0" },
-        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
-        {.type=component_type, .val="zero\0" },
-        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
-        {.type=component_type, .val="zero\0" },
-        {.type=separator_type, .val=PATH_SEPARATOR_VALUE },
-        {.type=eof_type, .val = "\0" },
-      },
+      .name           = "three expansions\0",
+      .input_src      = "$three/\0",
+      .expected_value = "zero/zero/zero/\0",
+    },
+    {
+      .name           = "shell syntax\0",
+      .input_src      = "${three}/\0",
+      .expected_value = "zero/zero/zero/\0",
+    },
+    {
+      .name           = "shell syntax with default\0",
+      .input_src      = "${four:-zero}/\0",
+      .expected_value = "zero/\0",
+    },
+    {
+      .name           = "shell syntax with interpolated default\0",
+      .input_src      = "${four:-$three}/\0",
+      .expected_value = "zero/zero/zero/\0",
     },
   };
 
   struct filepath_resolver* fpr;
+  char test_dest[128] = { 0 };
   for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
     fpr = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
     ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
 
-    struct path_token_node* head = fpr->head;
-
-    for (size_t j = 0; j < tcs->expected_token_count; j += 1) {
-      ASSERT_NOT_NULL(head);
-      ASSERT_EQ_U(head->type, tcs[i].expected_tokens[j].type);
-      ASSERT_EQ_STR(head->value, tcs[i].expected_tokens[j].val);
-      head = head->next;
-    }
+    test_filepath_resolver_dump_path_string(fpr, test_dest);
+    ASSERT_EQ_STR(test_dest, tcs[i].expected_value);
 
     libd_filepath_resolver_destroy(fpr);
   }
@@ -218,4 +206,110 @@ test_env_getter(
   }
 
   return libd_env_var_not_found;
+}
+
+void
+test_filepath_resolver_dump_path_string(
+  struct filepath_resolver* fpr,
+  char* dest)
+{
+  size_t offset                = 0;
+  struct path_token_node* curr = fpr->head;
+  while (curr->type != eof_type) {
+    strcpy(dest + offset, curr->value);
+    offset += curr->val_len;
+    curr = curr->next;
+  }
+
+  *(dest + offset) = '\0';
+}
+
+TEST(filepath_resolver_normalize)
+{
+  struct test_case {
+    char* name;
+    char* input_src;
+    enum libd_filesystem_path_type input_type;
+    enum libd_result expected_code;
+    const char* expected_value;
+  } tcs[] = {
+    {
+      .name           = "remove extra separators 1\0",
+      .input_src      = "//zero\0",
+      .input_type     = libd_abs_file,
+      .expected_code  = libd_ok,
+      .expected_value = "/zero\0",
+    },
+    {
+      .name           = "remove extra separators 2\0",
+      .input_src      = "zero//\0",
+      .input_type     = libd_rel_directory,
+      .expected_code  = libd_ok,
+      .expected_value = "zero/\0",
+    },
+    {
+      .name           = "remove extra separators 3\0",
+      .input_src      = "zero//zero\0",
+      .input_type     = libd_rel_file,
+      .expected_code  = libd_ok,
+      .expected_value = "zero/zero\0",
+    },
+    {
+      .name           = "remove extra separators 4\0",
+      .input_src      = "/////zero////zero///zero\0",
+      .input_type     = libd_abs_file,
+      .expected_code  = libd_ok,
+      .expected_value = "/zero/zero/zero\0",
+    },
+    {
+      .name           = "remove self-refs 1\0",
+      .input_src      = "./zero\0",
+      .input_type     = libd_abs_file,
+      .expected_code  = libd_ok,
+      .expected_value = "/zero\0",
+    },
+    {
+      .name           = "remove self-refs 2\0",
+      .input_src      = "zero/./zero\0",
+      .input_type     = libd_rel_file,
+      .expected_code  = libd_ok,
+      .expected_value = "zero/zero\0",
+    },
+    {
+      .name           = "remove self-refs 3\0",
+      .input_src      = "zero/./././zero\0",
+      .input_type     = libd_rel_file,
+      .expected_code  = libd_ok,
+      .expected_value = "zero/zero\0",
+    },
+    {
+      .name           = "remove self-refs 4\0",
+      .input_src      = "zero/zero/./\0",
+      .input_type     = libd_rel_directory,
+      .expected_code  = libd_ok,
+      .expected_value = "zero/zero/\0",
+    },
+    {
+      .name           = "abs parent ref 1\0",
+      .input_src      = "../zero\0",
+      .input_type     = libd_abs_file,
+      .expected_code  = libd_invalid_path,
+      .expected_value = "\0",
+    },
+  };
+
+  struct filepath_resolver* fpr;
+  char test_dest[128] = { 0 };
+  for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
+    fpr = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
+
+    ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
+    ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
+    ASSERT_EQ_U(libd_filepath_resolver_normalize(fpr), tcs[i].expected_code);
+
+    test_filepath_resolver_dump_path_string(fpr, test_dest);
+    ASSERT_EQ_STR(test_dest, tcs[i].expected_value);
+
+    libd_filepath_resolver_destroy(fpr);
+  }
 }

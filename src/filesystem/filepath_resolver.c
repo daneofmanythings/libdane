@@ -47,14 +47,14 @@ libd_filepath_resolver_destroy(struct filepath_resolver* pt)
 }
 
 struct path_token_node*
-libd_tokenize_from_string(
+libd_tokenize_from_string_into_dll(
   const char* src,
   struct filepath_allocator* fpa);
 enum libd_result
 libd_filepath_resolver_tokenize(struct filepath_resolver* fpr)
 {
   fpr->allocator.reset(&fpr->allocator.wrapper);
-  fpr->head = libd_tokenize_from_string(fpr->src, &fpr->allocator);
+  fpr->head = libd_tokenize_from_string_into_dll(fpr->src, &fpr->allocator);
 
   return libd_ok;
 }
@@ -66,7 +66,7 @@ libd_make_path_token_node(
   struct filepath_allocator* fpa);
 struct path_token_node*
 
-libd_tokenize_from_string( // FIX: this needs error handling
+libd_tokenize_from_string_into_dll( // FIX: this needs error handling
   const char* src,
   struct filepath_allocator* fpa)
 {
@@ -182,8 +182,9 @@ libd_filepath_resolver_expand( // FIX: error handling
   struct filepath_resolver* fpr,
   libd_filesystem_env_get_f env_get)
 {
-  struct path_token_node* curr_node = fpr->head;
-  struct path_token_node* temp      = NULL;
+  struct path_token_node* curr_node   = fpr->head;
+  struct path_token_node* temp        = NULL;
+  struct path_token_node* result_head = NULL;
 
   char env_val[256] = { 0 };
 
@@ -193,6 +194,9 @@ libd_filepath_resolver_expand( // FIX: error handling
     bool is_env_var = platform_is_env_var(curr_node->value);
 
     if (!is_env_var) {
+      if (result_head == NULL) {
+        result_head = curr_node;
+      }
       curr_node = curr_node->next;
       continue;
     }
@@ -203,7 +207,7 @@ libd_filepath_resolver_expand( // FIX: error handling
     }
 
     struct path_token_node* new_node =
-      libd_tokenize_from_string(env_val, &fpr->allocator);
+      libd_tokenize_from_string_into_dll(env_val, &fpr->allocator);
 
     if (curr_node->prev) {
       curr_node->prev->next = new_node;
@@ -224,20 +228,144 @@ libd_filepath_resolver_expand( // FIX: error handling
     new_node->next = curr_node->next;
     curr_node      = temp;
   }
-  while (curr_node->prev != NULL) {
-    curr_node = curr_node->prev;
-  }
-  fpr->head = curr_node;
+  fpr->head = result_head;
 
   return result;
 }
 
 enum libd_result
+handle_path_separator(struct path_token_node* node);
+enum libd_result
+handle_filepath_parent_ref(
+  struct path_token_node* node,
+  struct filepath_resolver* fpr);
+enum libd_result
+handle_filepath_curr_ref(
+  struct path_token_node* node,
+  struct filepath_resolver* fpr);
+enum libd_result
+handle_filepath_component(struct path_token_node* node);
+
+enum libd_result
 libd_filepath_resolver_normalize(struct filepath_resolver* fpr)
 {
-  // TODO:
-  (void)fpr;
-  return 0;
+  enum libd_result r = libd_ok;
+
+  struct path_token_node* curr_node = fpr->head;
+  struct path_token_node* new_head  = curr_node;
+
+  while (curr_node->type != eof_type) {
+    if (curr_node->type == separator_type) {
+      r = handle_path_separator(curr_node);
+    } else if (strcmp(curr_node->value, "..") == 0) {
+      r = handle_filepath_parent_ref(curr_node, fpr);
+    } else if (strcmp(curr_node->value, ".") == 0) {
+      r = handle_filepath_curr_ref(curr_node, fpr);
+    } else {
+      r = handle_filepath_component(curr_node);
+    }
+    if (r != libd_ok) {
+      return r;
+    }
+    curr_node = curr_node->next;
+  }
+
+  // TODO: fix leading and trailing separators for relative and abs paths
+
+  return libd_ok;
+}
+
+// NOTE: will need refactor if more windows features are supported.
+enum libd_result
+handle_path_separator(struct path_token_node* node)
+{
+  if (node->prev != NULL && node->prev->type == separator_type) {
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
+  }
+  return libd_ok;
+}
+
+enum libd_result
+handle_filepath_parent_ref(
+  struct path_token_node* node,
+  struct filepath_resolver* fpr)
+{
+  if (node->next == NULL || node->next->type != separator_type) {
+    return libd_invalid_path;
+  }
+
+  if (node->prev == NULL) {
+    if ((fpr->path_type & LIBD_FILEPATH_IS_ABS) == 1) {
+      return libd_invalid_path;
+    }
+    return libd_ok;
+  }
+
+  struct path_token_node* one_behind = node->prev;
+  if (one_behind->type != separator_type) {
+    return libd_invalid_path;
+  }
+
+  if ((fpr->path_type & LIBD_FILEPATH_IS_ABS) == 1) {
+    return libd_invalid_path;
+  }
+
+  struct path_token_node* two_behind = one_behind->prev;
+  if (two_behind == NULL || two_behind->type != component_type) {
+    return libd_invalid_path;
+  }
+
+  if (strcmp(two_behind->value, node->value) == 0) {
+    return libd_ok;  // chain of relative parent refs
+  }
+
+  node->next->prev = two_behind->prev;
+  if (two_behind->prev != NULL) {
+    two_behind->prev->next = node->next;
+    fpr->head              = two_behind->prev;
+  } else {
+    fpr->head = node->next;
+  }
+
+  return libd_ok;
+}
+
+enum libd_result
+handle_filepath_curr_ref(
+  struct path_token_node* node,
+  struct filepath_resolver* fpr)
+{
+  if (node->next == NULL || node->next->type == eof_type) {
+    return libd_invalid_path;
+  }
+
+  node->next->prev = node->prev;
+  if (node->prev != NULL) {
+    node->prev->next = node->next;
+  } else {
+    fpr->head = node->next;
+  }
+
+  return libd_ok;
+}
+
+enum libd_result
+handle_filepath_component(struct path_token_node* node)
+{
+  if (!plaform_is_component_value_valid(node->value)) {
+    return libd_invalid_path;
+  }
+  if (node->prev != NULL && node->prev->type != separator_type) {
+    return libd_invalid_path;
+  }
+  if ( // purposely not doing compliment logic for type.
+    node->next == NULL || 
+    !(node->next->type == eof_type || node->next->type == separator_type)) {
+    return libd_invalid_path;
+  }
+
+  return libd_ok;
 }
 
 enum libd_result
