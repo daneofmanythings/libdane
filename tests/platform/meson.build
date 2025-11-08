@@ -12,5 +12,7 @@ test(
   'platform tests',
   platform_tests,
   suite: 'platform',
-  args: [],
+  args: [
+    test_args,
+  ],
 )

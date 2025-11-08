@@ -20,5 +20,7 @@ test(
   'filesystem tests',
   filesystem_tests,
   suite: 'filesystem',
-  args: [],
+  args: [
+    test_args,
+  ],
 )

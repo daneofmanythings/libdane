@@ -5,7 +5,7 @@ test_sources = [
   # 'errors',
 ]
 
-test_args = ['-g']
+test_args = ['-g', '-Wno-variadic-macros']
 
 foreach dir : test_sources
   subdir(dir)

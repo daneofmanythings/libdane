@@ -118,34 +118,34 @@ struct _predicate {
 };
 
 // clang-format off
-static inline bool is_eq_u(uintptr_t lhs, uintptr_t rhs) {return lhs == rhs;}
-static struct _predicate eq_u_pred = { .f = is_eq_u, .op = "==" };
-static inline bool is_ne_u(uintptr_t lhs, uintptr_t rhs) {return lhs != rhs;}
-static struct _predicate ne_u_pred = { .f = is_ne_u, .op = "!=" };
-static inline bool is_lt_u(uintptr_t lhs, uintptr_t rhs) {return lhs < rhs;}
-static struct _predicate lt_u_pred = { .f = is_lt_u, .op = "<" };
-static inline bool is_le_u(uintptr_t lhs, uintptr_t rhs) {return lhs <= rhs;}
-static struct _predicate le_u_pred = { .f = is_le_u, .op = "<=" };
-static inline bool is_gt_u(uintptr_t lhs, uintptr_t rhs) {return lhs > rhs;}
-static struct _predicate gt_u_pred = { .f = is_gt_u, .op = ">" };
-static inline bool is_ge_u(uintptr_t lhs, uintptr_t rhs) {return lhs >= rhs;}
-static struct _predicate ge_u_pred = { .f = is_ge_u, .op = ">=" };
+LIBD_USED static inline bool is_eq_u(uintptr_t lhs, uintptr_t rhs) {return lhs == rhs;}
+LIBD_USED static struct _predicate eq_u_pred = { .f = is_eq_u, .op = "==" };
+LIBD_USED static inline bool is_ne_u(uintptr_t lhs, uintptr_t rhs) {return lhs != rhs;}
+LIBD_USED static struct _predicate ne_u_pred = { .f = is_ne_u, .op = "!=" };
+LIBD_USED static inline bool is_lt_u(uintptr_t lhs, uintptr_t rhs) {return lhs < rhs;}
+LIBD_USED static struct _predicate lt_u_pred = { .f = is_lt_u, .op = "<" };
+LIBD_USED static inline bool is_le_u(uintptr_t lhs, uintptr_t rhs) {return lhs <= rhs;}
+LIBD_USED static struct _predicate le_u_pred = { .f = is_le_u, .op = "<=" };
+LIBD_USED static inline bool is_gt_u(uintptr_t lhs, uintptr_t rhs) {return lhs > rhs;}
+LIBD_USED static struct _predicate gt_u_pred = { .f = is_gt_u, .op = ">" };
+LIBD_USED static inline bool is_ge_u(uintptr_t lhs, uintptr_t rhs) {return lhs >= rhs;}
+LIBD_USED static struct _predicate ge_u_pred = { .f = is_ge_u, .op = ">=" };
 
-static inline bool is_eq_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs == (int64_t)rhs;}
-static struct _predicate eq_s_pred = { .f = is_eq_s, .op = "==" };
-static inline bool is_ne_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs != (int64_t)rhs;}
-static struct _predicate ne_s_pred = { .f = is_ne_s, .op = "!=" };
-static inline bool is_lt_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs < (int64_t)rhs;}
-static struct _predicate lt_s_pred = { .f = is_lt_s, .op = "<" };
-static inline bool is_le_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs <= (int64_t)rhs;}
-static struct _predicate le_s_pred = { .f = is_le_s, .op = "<=" };
-static inline bool is_gt_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs > (int64_t)rhs;}
-static struct _predicate gt_s_pred = { .f = is_gt_s, .op = ">" };
-static inline bool is_ge_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs >= (int64_t)rhs;}
-static struct _predicate ge_s_pred = { .f = is_ge_s, .op = ">=" };
+LIBD_USED static inline bool is_eq_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs == (int64_t)rhs;}
+LIBD_USED static struct _predicate eq_s_pred = { .f = is_eq_s, .op = "==" };
+LIBD_USED static inline bool is_ne_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs != (int64_t)rhs;}
+LIBD_USED static struct _predicate ne_s_pred = { .f = is_ne_s, .op = "!=" };
+LIBD_USED static inline bool is_lt_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs < (int64_t)rhs;}
+LIBD_USED static struct _predicate lt_s_pred = { .f = is_lt_s, .op = "<" };
+LIBD_USED static inline bool is_le_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs <= (int64_t)rhs;}
+LIBD_USED static struct _predicate le_s_pred = { .f = is_le_s, .op = "<=" };
+LIBD_USED static inline bool is_gt_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs > (int64_t)rhs;}
+LIBD_USED static struct _predicate gt_s_pred = { .f = is_gt_s, .op = ">" };
+LIBD_USED static inline bool is_ge_s(uintptr_t lhs, uintptr_t rhs) {return (int64_t)lhs >= (int64_t)rhs;}
+LIBD_USED static struct _predicate ge_s_pred = { .f = is_ge_s, .op = ">=" };
 
-static inline bool is_eq_str(uintptr_t lhs, uintptr_t rhs) {return strcmp((char*)lhs, (char*)rhs) == 0;}
-static struct _predicate eq_str_pred = { .f = is_eq_str, .op = "==" };
+LIBD_USED static inline bool is_eq_str(uintptr_t lhs, uintptr_t rhs) {return strcmp((char*)lhs, (char*)rhs) == 0;}
+LIBD_USED static struct _predicate eq_str_pred = { .f = is_eq_str, .op = "==" };
 // clang-format on
 
 static inline void
@@ -166,13 +166,15 @@ libd_assert_op(
 
   if (!pred.f(lhs, rhs)) {
     fprintf(stderr, fmt, lhs_s, pred.op, rhs_s, lhs, rhs, file, line);
-  }
-
-  if (opt_ctx && *opt_ctx) {
-    va_list args;
-    va_start(args, opt_ctx);
-    vfprintf(stderr, opt_ctx, args);
-    va_end(args);
+    if (opt_ctx != NULL) {
+      va_list args;
+      va_start(args, opt_ctx);
+      vfprintf(stderr, opt_ctx, args);
+      va_end(args);
+    }
+    if (LIBD_TESTING_ABORT_ON_FAIL) {
+      abort();
+    }
   }
 }
 
@@ -232,8 +234,8 @@ libd_assert_op(
  * maybe add mem: NE, zero'd
  */
 
-#define ASSERT_STR_EQ(lhs, rhs, ...)                    \
-  ASSERT_OP(eq_str_pred, lhs, rhs, "%s", ##__VA_ARGS__)
+#define ASSERT_EQ_STR(lhs, rhs, ...)                                          \
+  ASSERT_OP(eq_str_pred, (uintptr_t)lhs, (uintptr_t)rhs, "%s", ##__VA_ARGS__)
 
 /*
  * maybe add str: NE, substring, startswith, empty, not empty

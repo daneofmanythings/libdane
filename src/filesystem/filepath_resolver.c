@@ -1,3 +1,4 @@
+#include "../../include/libd/filesystem.h"
 #include "../../include/libd/platform/filesystem.h"
 #include "../../include/libd/utils/align_compat.h"
 #include "./filepath.h"
@@ -252,7 +253,6 @@ libd_filepath_resolver_normalize(struct filepath_resolver* fpr)
   enum libd_result r = libd_ok;
 
   struct path_token_node* curr_node = fpr->head;
-  struct path_token_node* new_head  = curr_node;
 
   while (curr_node->type != eof_type) {
     if (curr_node->type == separator_type) {
@@ -296,7 +296,7 @@ handle_filepath_parent_ref(
   }
 
   if (node->prev == NULL) {
-    if ((fpr->path_type & LIBD_FILEPATH_IS_ABS) == 1) {
+    if (libd_filepath_is_abs(fpr->path_type)) {
       return libd_invalid_path;
     }
     return libd_ok;
@@ -307,12 +307,17 @@ handle_filepath_parent_ref(
     return libd_invalid_path;
   }
 
-  if ((fpr->path_type & LIBD_FILEPATH_IS_ABS) == 1) {
+  if (libd_filepath_is_abs(fpr->path_type)) {
     return libd_invalid_path;
   }
 
   struct path_token_node* two_behind = one_behind->prev;
-  if (two_behind == NULL || two_behind->type != component_type) {
+
+  if (two_behind == NULL) {
+    // TODO:
+  }
+
+  if (two_behind->type != component_type) {
     return libd_invalid_path;
   }
 
@@ -323,7 +328,6 @@ handle_filepath_parent_ref(
   node->next->prev = two_behind->prev;
   if (two_behind->prev != NULL) {
     two_behind->prev->next = node->next;
-    fpr->head              = two_behind->prev;
   } else {
     fpr->head = node->next;
   }

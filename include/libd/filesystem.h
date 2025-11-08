@@ -44,8 +44,8 @@ typedef void (*libd_filesystem_env_free_f)(const char* var);
  * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
  */
 enum libd_filesystem_path_type {
-  libd_rel_file = 0,       // 0b0000
-  libd_abs_file = 1,       // 0b0001
+  libd_rel_file      = 0,  // 0b0000
+  libd_abs_file      = 1,  // 0b0001
   libd_rel_directory = 2,  // 0b0010
   libd_abs_directory = 3,  // 0b0011
   //
@@ -54,6 +54,18 @@ enum libd_filesystem_path_type {
 
 #define LIBD_FILEPATH_IS_ABS 1  // bit 0
 #define LIBD_FILEPATH_IS_DIR 2  // bit 1
+
+static inline bool
+libd_filepath_is_abs(enum libd_filesystem_path_type type)
+{
+  return (type & LIBD_FILEPATH_IS_ABS) == LIBD_FILEPATH_IS_ABS;
+}
+
+static inline bool
+libd_filepath_is_dir(enum libd_filesystem_path_type type)
+{
+  return (type & LIBD_FILEPATH_IS_DIR) == LIBD_FILEPATH_IS_DIR;
+}
 
 //==============================================================================
 // Path API

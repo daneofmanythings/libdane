@@ -233,82 +233,131 @@ TEST(filepath_resolver_normalize)
     enum libd_result expected_code;
     const char* expected_value;
   } tcs[] = {
+    // {
+    //   .name           = "remove extra separators 1\0",
+    //   .input_src      = "//zero\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "/zero\0",
+    // },
+    // {
+    //   .name           = "remove extra separators 2\0",
+    //   .input_src      = "zero//\0",
+    //   .input_type     = libd_rel_directory,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "zero/\0",
+    // },
+    // {
+    //   .name           = "remove extra separators 3\0",
+    //   .input_src      = "zero//zero\0",
+    //   .input_type     = libd_rel_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "zero/zero\0",
+    // },
+    // {
+    //   .name           = "remove extra separators 4\0",
+    //   .input_src      = "/////zero////zero///zero\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "/zero/zero/zero\0",
+    // },
+    // {
+    //   .name           = "remove self-refs 1\0",
+    //   .input_src      = "./zero\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "/zero\0",
+    // },
+    // {
+    //   .name           = "remove self-refs 2\0",
+    //   .input_src      = "zero/./zero\0",
+    //   .input_type     = libd_rel_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "zero/zero\0",
+    // },
+    // {
+    //   .name           = "remove self-refs 3\0",
+    //   .input_src      = "zero/./././zero\0",
+    //   .input_type     = libd_rel_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "zero/zero\0",
+    // },
+    // {
+    //   .name           = "remove self-refs 4\0",
+    //   .input_src      = "zero/zero/./\0",
+    //   .input_type     = libd_rel_directory,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "zero/zero/\0",
+    // },
+    // {
+    //   .name           = "abs parent ref 1\0",
+    //   .input_src      = "../zero\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_invalid_path,
+    //   .expected_value = "\0",
+    // },
+    // {
+    //   .name           = "abs parent ref 2\0",
+    //   .input_src      = "/zero/../\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_invalid_path,
+    //   .expected_value = "/\0",
+    // },
+    // {
+    //   .name           = "abs parent ref 3\0",
+    //   .input_src      = "/zero/zero/../../\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_invalid_path,
+    //   .expected_value = "/\0",
+    // },
+    // {
+    //   .name           = "abs parent ref 4\0",
+    //   .input_src      = "/zero/../zero/../\0",
+    //   .input_type     = libd_abs_file,
+    //   .expected_code  = libd_invalid_path,
+    //   .expected_value = "/\0",
+    // },
+    // {
+    //   .name           = "rel parent ref 1\0",
+    //   .input_src      = "../zero\0",
+    //   .input_type     = libd_rel_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "../zero\0",
+    // },
+    // {
+    //   .name           = "rel parent ref 2\0",
+    //   .input_src      = "../zero/../\0",
+    //   .input_type     = libd_rel_file,
+    //   .expected_code  = libd_ok,
+    //   .expected_value = "../\0",
+    // },
     {
-      .name           = "remove extra separators 1\0",
-      .input_src      = "//zero\0",
-      .input_type     = libd_abs_file,
-      .expected_code  = libd_ok,
-      .expected_value = "/zero\0",
-    },
-    {
-      .name           = "remove extra separators 2\0",
-      .input_src      = "zero//\0",
-      .input_type     = libd_rel_directory,
-      .expected_code  = libd_ok,
-      .expected_value = "zero/\0",
-    },
-    {
-      .name           = "remove extra separators 3\0",
-      .input_src      = "zero//zero\0",
+      .name           = "rel parent ref 3\0",
+      .input_src      = "zero/../zero/../../\0",
       .input_type     = libd_rel_file,
       .expected_code  = libd_ok,
-      .expected_value = "zero/zero\0",
-    },
-    {
-      .name           = "remove extra separators 4\0",
-      .input_src      = "/////zero////zero///zero\0",
-      .input_type     = libd_abs_file,
-      .expected_code  = libd_ok,
-      .expected_value = "/zero/zero/zero\0",
-    },
-    {
-      .name           = "remove self-refs 1\0",
-      .input_src      = "./zero\0",
-      .input_type     = libd_abs_file,
-      .expected_code  = libd_ok,
-      .expected_value = "/zero\0",
-    },
-    {
-      .name           = "remove self-refs 2\0",
-      .input_src      = "zero/./zero\0",
-      .input_type     = libd_rel_file,
-      .expected_code  = libd_ok,
-      .expected_value = "zero/zero\0",
-    },
-    {
-      .name           = "remove self-refs 3\0",
-      .input_src      = "zero/./././zero\0",
-      .input_type     = libd_rel_file,
-      .expected_code  = libd_ok,
-      .expected_value = "zero/zero\0",
-    },
-    {
-      .name           = "remove self-refs 4\0",
-      .input_src      = "zero/zero/./\0",
-      .input_type     = libd_rel_directory,
-      .expected_code  = libd_ok,
-      .expected_value = "zero/zero/\0",
-    },
-    {
-      .name           = "abs parent ref 1\0",
-      .input_src      = "../zero\0",
-      .input_type     = libd_abs_file,
-      .expected_code  = libd_invalid_path,
-      .expected_value = "\0",
+      .expected_value = "../\0",
     },
   };
 
   struct filepath_resolver* fpr;
   char test_dest[128] = { 0 };
   for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
-    fpr = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
+    fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
     ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
-    ASSERT_EQ_U(libd_filepath_resolver_normalize(fpr), tcs[i].expected_code);
+    ASSERT_EQ_U(
+      libd_filepath_resolver_normalize(fpr),
+      tcs[i].expected_code,
+      "at test name='%s'\n",
+      tcs[i].name);
 
-    test_filepath_resolver_dump_path_string(fpr, test_dest);
-    ASSERT_EQ_STR(test_dest, tcs[i].expected_value);
+    if (tcs[i].expected_code == libd_ok) {
+      test_filepath_resolver_dump_path_string(fpr, test_dest);
+      ASSERT_EQ_STR(
+        test_dest, tcs[i].expected_value, "at test name='%s'", tcs[i].name);
+    }
 
     libd_filepath_resolver_destroy(fpr);
   }

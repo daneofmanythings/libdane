@@ -19,5 +19,7 @@ test(
   'memory tests',
   memory_tests,
   suite: 'memory',
-  args: [],
+  args: [
+    test_args,
+  ],
 )
