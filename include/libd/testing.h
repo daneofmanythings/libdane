@@ -6,8 +6,6 @@
 #ifndef LIBD_TESTING_H
 #define LIBD_TESTING_H
 
-#include "common.h"
-
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -162,7 +160,7 @@ libd_assert_op(
   ...)
 {
   char fmt[128];
-  snprintf(fmt, ARR_LEN(fmt), ASSERT_FMT_STR, repr, repr);
+  snprintf(fmt, sizeof(fmt), ASSERT_FMT_STR, repr, repr);
 
   if (!pred.f(lhs, rhs)) {
     fprintf(stderr, fmt, lhs_s, pred.op, rhs_s, lhs, rhs, file, line);

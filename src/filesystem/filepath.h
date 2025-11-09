@@ -40,9 +40,10 @@ struct filepath_resolver {
   struct filepath_allocator allocator;
 };
 
-#define FILEPATH_COMPONENT_MAX 16
+#define FILEPATH_COMPONENT_MAX 15
 struct filepath {
   token_type_e types[FILEPATH_COMPONENT_MAX];
+  enum libd_filesystem_path_type path_type;
   char* values[FILEPATH_COMPONENT_MAX];
   size_t length;
   struct filepath_allocator allocator;

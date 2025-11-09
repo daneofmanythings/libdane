@@ -490,11 +490,12 @@ libd_filepath_resolver_dump_to_filepath(
   struct filepath_resolver* fpr,
   struct filepath* fp)
 {
+  fp->path_type                = fpr->path_type;
   struct path_token_node* curr = fpr->head;
   size_t i                     = 0;
-  while (curr != NULL) {
+  do {
     if (i >= FILEPATH_COMPONENT_MAX) {
-      return libd_no_memory;
+      return libd_err;
     }
     fp->types[i] = curr->type;
     fp->values[i] =
@@ -504,7 +505,11 @@ libd_filepath_resolver_dump_to_filepath(
     }
     strcpy(fp->values[i], curr->value);
     fp->length += curr->val_len;
-  }
+    curr = curr->next;
+    i += 1;
+  } while (curr->next != NULL);
+
+  fp->types[i] = eof_type;
 
   return libd_ok;
 }

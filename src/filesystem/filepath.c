@@ -1,6 +1,7 @@
 #include "filepath.h"
 
 #include "../../include/libd/filesystem.h"
+#include "../../include/libd/platform/filesystem.h"
 
 #include <string.h>
 
@@ -12,12 +13,12 @@ libd_filesystem_filepath_get_required_size(void)
 
 enum libd_result
 libd_filesystem_filepath_init(
-  struct filepath* out_fp,
+  struct filepath* fp,
   const char* raw_path,
   enum libd_filesystem_path_type type,
   libd_filesystem_env_get_f env_getter)
 {
-  if (out_fp == NULL || raw_path == NULL || raw_path[0] == NULL_TERMINATOR) {
+  if (fp == NULL || raw_path == NULL || raw_path[0] == NULL_TERMINATOR) {
     return libd_invalid_parameter;
   }
 
@@ -34,9 +35,11 @@ libd_filesystem_filepath_init(
     goto cleanup;
   }
 
-  r = libd_filepath_resolver_expand(fpr, env_getter);
-  if (r != 0) {
-    goto cleanup;
+  if (env_getter != NULL) {
+    r = libd_filepath_resolver_expand(fpr, env_getter);
+    if (r != 0) {
+      goto cleanup;
+    }
   }
 
   r = libd_filepath_resolver_normalize(fpr);
@@ -44,13 +47,13 @@ libd_filesystem_filepath_init(
     goto cleanup;
   }
 
-  r = libd_filepath_allocator_create(&out_fp->allocator, 1);
+  r = libd_filepath_allocator_create(&fp->allocator, 1);
   if (r != 0) {
     goto cleanup;
   }
-  out_fp->length = 0;
+  fp->length = 0;
 
-  r = libd_filepath_resolver_dump_to_filepath(fpr, out_fp);
+  r = libd_filepath_resolver_dump_to_filepath(fpr, fp);
   if (r != 0) {
     goto cleanup;
   }
@@ -62,17 +65,21 @@ cleanup:
 
 enum libd_result
 libd_filesystem_filepath_string(
-  libd_filepath_h* path,
+  struct filepath* fp,
   char* out_string)
 {
   char* writer = out_string;
-  u8 i         = 0;
-  while (!IS_EOF_TYPE(path->types[i])) {
+  if (!libd_filepath_is_abs(fp->path_type)) {
+    *writer++ = '.';
+    *writer++ = PATH_SEPARATOR;
+  }
+  u8 i = 0;
+  while (!IS_EOF_TYPE(fp->types[i])) {
     if (i >= FILEPATH_COMPONENT_MAX) {
-      return libd_no_memory;  // FIX: this is not expressive
+      return libd_err;  // FIX: this is not expressive
     }
-    strcpy(writer, *path->values);
-    writer += strlen(*path->values);
+    strcpy(writer, fp->values[i]);
+    writer += strlen(fp->values[i]);
     i += 1;
   }
 

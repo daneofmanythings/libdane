@@ -127,7 +127,7 @@ TEST(filepath_resolver_tokenize)
 }
 
 enum libd_result
-test_env_getter(
+filepath_resolver_env_getter(
   char* out_val,
   const char* key);
 
@@ -183,7 +183,7 @@ TEST(filepath_resolver_expand)
     fpr  = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
-    ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
+    ASSERT_OK(libd_filepath_resolver_expand(fpr, filepath_resolver_env_getter));
 
     test_filepath_resolver_dump_path_string(fpr, test_dest);
     ASSERT_EQ_STR(test_dest, tcs[i].expected_value);
@@ -193,7 +193,7 @@ TEST(filepath_resolver_expand)
 }
 
 enum libd_result
-test_env_getter(
+filepath_resolver_env_getter(
   char* out_val,
   const char* key)
 {
@@ -445,7 +445,7 @@ TEST(filepath_resolver_normalize)
     fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
-    ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
+    ASSERT_OK(libd_filepath_resolver_expand(fpr, filepath_resolver_env_getter));
     ASSERT_EQ_U(
       libd_filepath_resolver_normalize(fpr),
       tcs[i].expected_code,
@@ -472,9 +472,9 @@ TEST(filepath_resolver_dump_to_filepath)
   } tcs[] = {
     {
       .name       = "first\0",
-      .input_src  = "./$three//zero.test\0",
+      .input_src  = "$three//zero.test\0",
       .input_type = libd_rel_file,
-      .expected   = "zero/zero/zero/zero.test\0",
+      .expected   = "./zero/zero/zero/zero.test\0",
     },
   };
 
@@ -482,12 +482,12 @@ TEST(filepath_resolver_dump_to_filepath)
   char test_dest[128] = { 0 };
   char* name          = NULL;
   for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
-    name = tcs[i].name;  // for gdb
+    name = tcs[i].name;
 
     fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
-    ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
+    ASSERT_OK(libd_filepath_resolver_expand(fpr, filepath_resolver_env_getter));
     ASSERT_OK(libd_filepath_resolver_normalize(fpr));
 
     struct filepath fp = { 0 };
@@ -496,8 +496,8 @@ TEST(filepath_resolver_dump_to_filepath)
 
     ASSERT_OK(libd_filepath_resolver_dump_to_filepath(fpr, &fp));
 
-    ASSERT_EQ_STR(
-      libd_filesystem_filepath_string(&fp, test_dest), tcs[i].expected);
+    ASSERT_OK(libd_filesystem_filepath_string(&fp, test_dest));
+    ASSERT_EQ_STR(test_dest, tcs[i].expected);
 
     libd_filepath_resolver_destroy(fpr);
   }
