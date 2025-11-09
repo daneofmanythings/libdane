@@ -48,8 +48,6 @@ enum libd_filesystem_path_type {
   libd_abs_file      = 1,  // 0b0001
   libd_rel_directory = 2,  // 0b0010
   libd_abs_directory = 3,  // 0b0011
-  //
-  libd_filesystem_path_type_count,
 };
 
 #define LIBD_FILEPATH_IS_ABS 1  // bit 0

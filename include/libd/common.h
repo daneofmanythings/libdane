@@ -47,8 +47,9 @@ typedef int64_t s64;
 //  Libdane convenience macros
 //=============================================================================
 
-#define ARR_LEN(a)      (sizeof(a) / sizeof(a[0]))
-#define NULL_TERMINATOR '\0'
+#define ARR_LEN(a)                    (sizeof(a) / sizeof(a[0]))
+#define NULL_TERMINATOR               '\0'
+#define CHECK_AGAINST_MASK(val, mask) (((val) & (mask)) != 0)
 
 //=============================================================================
 //  Libdane result codes

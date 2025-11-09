@@ -116,11 +116,13 @@ is_component_value_delimeter_valid(
     return false;
   }
 
-  if (value[i + 1] == NULL_TERMINATOR) {
+  value += i;
+
+  if (value[1] == NULL_TERMINATOR) {
     return false;
   }
 
-  if (!isalpha(value[i - 1] || !isalpha(value[i + 1]))) {
+  if (!(isalnum(value[1]) && isalnum(value[-1]))) {
     return false;
   }
 
