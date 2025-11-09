@@ -52,8 +52,10 @@ TEST(filepath_resolver_create_destroy)
 
   struct filepath_resolver* fpr = NULL;
   enum libd_result r;
-  for (u8 i = 0; i < ARR_LEN(tcs); i++) {
-    r = libd_filepath_resolver_create(&fpr, tcs[i].src, tcs[i].type);
+  char* name = NULL;
+  for (u8 i = 0; i < ARR_LEN(tcs); i += 1) {
+    name = tcs[i].name;
+    r    = libd_filepath_resolver_create(&fpr, tcs[i].src, tcs[i].type);
     ASSERT_EQ_U(r, tcs[i].expected);
     if (fpr != NULL) {
       libd_filepath_resolver_destroy(fpr);
@@ -106,9 +108,10 @@ TEST(filepath_resolver_tokenize)
   };
 
   struct filepath_resolver* fpr;
+  char* name = NULL;
   for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
-
-    fpr = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
+    name = tcs[i].name;
+    fpr  = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
     struct path_token_node* head = fpr->head;
@@ -174,8 +177,10 @@ TEST(filepath_resolver_expand)
 
   struct filepath_resolver* fpr;
   char test_dest[128] = { 0 };
+  char* name          = NULL;
   for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
-    fpr = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
+    name = tcs[i].name;
+    fpr  = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
     ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
@@ -434,7 +439,7 @@ TEST(filepath_resolver_normalize)
   struct filepath_resolver* fpr;
   char test_dest[128] = { 0 };
   char* name          = NULL;
-  for (int i = ARR_LEN(tcs) - 1; i >= 0; i -= 1) {
+  for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
     name = tcs[i].name;  // for gdb
 
     fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
@@ -452,6 +457,47 @@ TEST(filepath_resolver_normalize)
       ASSERT_EQ_STR(
         test_dest, tcs[i].expected_value, "at test name='%s'", tcs[i].name);
     }
+
+    libd_filepath_resolver_destroy(fpr);
+  }
+}
+
+TEST(filepath_resolver_dump_to_filepath)
+{
+  struct test_case {
+    char* name;
+    char* input_src;
+    enum libd_filesystem_path_type input_type;
+    const char* expected;
+  } tcs[] = {
+    {
+      .name       = "first\0",
+      .input_src  = "./$three//zero.test\0",
+      .input_type = libd_rel_file,
+      .expected   = "zero/zero/zero/zero.test\0",
+    },
+  };
+
+  struct filepath_resolver* fpr;
+  char test_dest[128] = { 0 };
+  char* name          = NULL;
+  for (size_t i = 0; i < ARR_LEN(tcs); i += 1) {
+    name = tcs[i].name;  // for gdb
+
+    fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
+
+    ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
+    ASSERT_OK(libd_filepath_resolver_expand(fpr, test_env_getter));
+    ASSERT_OK(libd_filepath_resolver_normalize(fpr));
+
+    struct filepath fp = { 0 };
+    fp.length          = 0;
+    ASSERT_OK(libd_filepath_allocator_create(&fp.allocator, 8));
+
+    ASSERT_OK(libd_filepath_resolver_dump_to_filepath(fpr, &fp));
+
+    ASSERT_EQ_STR(
+      libd_filesystem_filepath_string(&fp, test_dest), tcs[i].expected);
 
     libd_filepath_resolver_destroy(fpr);
   }

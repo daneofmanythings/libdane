@@ -44,11 +44,11 @@ libd_filesystem_filepath_init(
     goto cleanup;
   }
 
-  // TODO: init the relevant filepath fields, mainly the allocator.
   r = libd_filepath_allocator_create(&out_fp->allocator, 1);
   if (r != 0) {
     goto cleanup;
   }
+  out_fp->length = 0;
 
   r = libd_filepath_resolver_dump_to_filepath(fpr, out_fp);
   if (r != 0) {
@@ -58,4 +58,23 @@ libd_filesystem_filepath_init(
 cleanup:
   libd_filepath_resolver_destroy(fpr);
   return r;
+}
+
+enum libd_result
+libd_filesystem_filepath_string(
+  libd_filepath_h* path,
+  char* out_string)
+{
+  char* writer = out_string;
+  u8 i         = 0;
+  while (!IS_EOF_TYPE(path->types[i])) {
+    if (i >= FILEPATH_COMPONENT_MAX) {
+      return libd_no_memory;  // FIX: this is not expressive
+    }
+    strcpy(writer, *path->values);
+    writer += strlen(*path->values);
+    i += 1;
+  }
+
+  return libd_ok;
 }

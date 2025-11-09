@@ -40,9 +40,10 @@ struct filepath_resolver {
   struct filepath_allocator allocator;
 };
 
+#define FILEPATH_COMPONENT_MAX 16
 struct filepath {
-  token_type_e types[8];
-  char* values[8];
+  token_type_e types[FILEPATH_COMPONENT_MAX];
+  char* values[FILEPATH_COMPONENT_MAX];
   size_t length;
   struct filepath_allocator allocator;
 };
@@ -74,10 +75,10 @@ libd_filepath_resolver_dump_to_filepath(
 
 enum libd_result
 libd_filepath_allocator_create(
-  struct filepath_allocator* out_pta,
+  struct filepath_allocator* out_fpa,
   u8 alignment);
 
 void
-libd_filepath_allocator_destroy(struct filepath_allocator* pta);
+libd_filepath_allocator_destroy(struct filepath_allocator* fpa);
 
 #endif  // FILESYSTEM_FILEPATH_H

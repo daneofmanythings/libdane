@@ -488,10 +488,23 @@ ensure_trailing_separator(struct filepath_resolver* fpr)
 enum libd_result
 libd_filepath_resolver_dump_to_filepath(
   struct filepath_resolver* fpr,
-  struct filepath* dest)
+  struct filepath* fp)
 {
-  (void)fpr;
-  (void)dest;
-  // TODO:
-  return 0;
+  struct path_token_node* curr = fpr->head;
+  size_t i                     = 0;
+  while (curr != NULL) {
+    if (i >= FILEPATH_COMPONENT_MAX) {
+      return libd_no_memory;
+    }
+    fp->types[i] = curr->type;
+    fp->values[i] =
+      fp->allocator.alloc(&fp->allocator.wrapper, curr->val_len + 1);
+    if (fp->values[i] == NULL) {
+      return libd_no_memory;
+    }
+    strcpy(fp->values[i], curr->value);
+    fp->length += curr->val_len;
+  }
+
+  return libd_ok;
 }

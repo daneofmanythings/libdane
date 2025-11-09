@@ -177,8 +177,10 @@ libd_filesystem_filepath_filename(
  * @param path Path to examine
  * @return pointer to the internal path string.
  */
-const char*
-libd_filesystem_filepath_string(libd_filepath_h* path);
+enum libd_result
+libd_filesystem_filepath_string(
+  libd_filepath_h* path,
+  char* out_string);
 
 // get extension
 
