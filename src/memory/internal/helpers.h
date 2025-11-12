@@ -28,7 +28,7 @@ libd_memory_is_valid_alignment(uint8_t alignment);
  * @param alignment The power of 2 to round to. This parameter MUST be a power
  * of 2.
  */
-uintptr_t
-libd_memory_align_value(
-  uintptr_t value,
-  uintptr_t alignment);
+uptr
+libd_memory_align_up(
+  uptr value,
+  uptr alignment);

@@ -9,19 +9,19 @@
 
 // field order matters for 16byte data alignment
 struct linear_allocator {
-  size_t curr_data_size;
-  size_t head_index;
+  usize curr_data_size;
+  usize head_index;
   u8 alignment;
   u8 header_size;
   u32 sys_page_size;
-  size_t data_reservation_size;
+  usize data_reservation_size;
   u8 data[];
 };
 
-static inline size_t
+static inline usize
 _total_reservation_size(struct linear_allocator* la)
 {
-  return libd_memory_align_value(
+  return libd_memory_align_up(
     la->header_size + la->data_reservation_size, la->sys_page_size);
 }
 
@@ -48,10 +48,10 @@ libd_linear_allocator_create(
 
   s64 page_size = sysconf(_SC_PAGE_SIZE);
   if (page_size == -1) {
-    // TODO: unable to get page size from system
+    return libd_err;
   }
-  size_t total_reservation_size =
-    libd_memory_align_value(header_size + data_reservation_size, page_size);
+  usize total_reservation_size =
+    libd_memory_align_up(header_size + data_reservation_size, page_size);
 
   struct linear_allocator* la = mmap(
     NULL,
@@ -61,15 +61,15 @@ libd_linear_allocator_create(
     -1,
     0);
   if (la == MAP_FAILED) {
-    // TODO:
+    return libd_err;
   }
 
-  size_t curr_data_size = libd_memory_align_value(starting_capacity, page_size);
-  size_t curr_total_size =
-    libd_memory_align_value(header_size + curr_data_size, page_size);
+  usize curr_data_size = libd_memory_align_up(starting_capacity, page_size);
+  usize curr_total_size =
+    libd_memory_align_up(header_size + curr_data_size, page_size);
 
   if (mprotect(la, curr_total_size, PROT_READ | PROT_WRITE) != 0) {
-    // TODO:
+    return libd_err;
   }
 
   la->curr_data_size        = curr_data_size;
@@ -92,7 +92,7 @@ libd_linear_allocator_destroy(struct linear_allocator* la)
   }
 
   if (munmap(la, _total_reservation_size(la)) != 0) {
-    // TODO:
+    return libd_err;
   }
 
   return libd_ok;
@@ -114,12 +114,12 @@ libd_linear_allocator_alloc(
     }
     // Round to next multiple of data_size * 2 to amortize future large
     // allocations
-    size_t new_data_size =
-      libd_memory_align_value(la->head_index + size, la->curr_data_size * 2);
+    usize new_data_size =
+      libd_memory_align_up(la->head_index + size, la->curr_data_size * 2);
 
     // Ensure total allocation (header + data) is page-aligned for mprotect
-    size_t new_total_size = libd_memory_align_value(
-      la->header_size + new_data_size, la->sys_page_size);
+    usize new_total_size =
+      libd_memory_align_up(la->header_size + new_data_size, la->sys_page_size);
 
     new_total_size = MIN(new_total_size, _total_reservation_size(la));
 
@@ -130,7 +130,7 @@ libd_linear_allocator_alloc(
   }
 
   *out_ptr = &la->data[la->head_index];
-  la->head_index += libd_memory_align_value(size, la->alignment);
+  la->head_index += libd_memory_align_up(size, la->alignment);
 
   return libd_ok;
 }
@@ -180,7 +180,7 @@ libd_linear_allocator_reset(struct linear_allocator* la)
 enum libd_result
 libd_linear_allocator_bytes_free(
   struct linear_allocator* la,
-  size_t* out_size_bytes)
+  usize* out_size_bytes)
 {
   if (la == NULL || out_size_bytes == NULL) {
     return libd_invalid_parameter;

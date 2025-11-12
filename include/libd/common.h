@@ -7,6 +7,7 @@
 #ifndef LIBD_TYPES_H
 #define LIBD_TYPES_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define _LIBD_TYPES 1
@@ -23,6 +24,9 @@ typedef int8_t s8;
 typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
+typedef uintptr_t uptr;
+
+typedef size_t usize;
 
 #define _UNSIGNED_MAX(n) ((u##n)0 - 1)
 #define _SIGNED_MIN(n)   ((s##n)1 << (n - 1))
@@ -47,10 +51,10 @@ typedef int64_t s64;
 //  Libdane convenience macros
 //=============================================================================
 
+#define NULL_TERMINATOR               '\0'
 #define MIN(a, b)                     (a ? a < b : b)
 #define MAX(a, b)                     (a ? a > b : b)
 #define ARR_LEN(a)                    (sizeof(a) / sizeof(a[0]))
-#define NULL_TERMINATOR               '\0'
 #define CHECK_AGAINST_MASK(val, mask) (((val) & (mask)) != 0)
 #define KiB                           (1 << 10)
 #define MiB                           (1 << 20)

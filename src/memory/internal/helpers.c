@@ -13,7 +13,7 @@
  * @return true if power of 2, false otherwise.
  */
 bool
-libd_memory_is_power_of_two(size_t offset)
+libd_memory_is_power_of_two(usize offset)
 {
   return ((offset & (offset - 1)) == 0);
 }
@@ -25,7 +25,7 @@ libd_memory_is_power_of_two(size_t offset)
  * @return LIBD_MEM_OK on success, non-zero otherwise.
  */
 bool
-libd_memory_is_valid_alignment(uint8_t alignment)
+libd_memory_is_valid_alignment(u8 alignment)
 {
   if (alignment == 0) {
     return false;
@@ -38,10 +38,10 @@ libd_memory_is_valid_alignment(uint8_t alignment)
   return true;
 }
 
-uintptr_t
-libd_memory_align_value(
-  uintptr_t value,
-  uintptr_t alignment)
+uptr
+libd_memory_align_up(
+  uptr value,
+  uptr alignment)
 {
-  return ((value + alignment - 1) & ~(uintptr_t)(alignment - 1));
+  return ((value + alignment - 1) & ~(uptr)(alignment - 1));
 }
