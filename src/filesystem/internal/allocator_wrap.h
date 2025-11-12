@@ -14,19 +14,20 @@ struct filepath_allocator_wrapper {
 
 typedef void* (*alloc_f)(
   struct filepath_allocator_wrapper*,
-  size_t);
+  u32);
 typedef void (*reset_f)(struct filepath_allocator_wrapper*);
 
 enum libd_result
 libd_allocator_wrapper_create(
   struct filepath_allocator_wrapper* allocator,
-  size_t size,
+  u32 reserve,
+  u32 size,
   uint8_t alignment);
 
 void*
 libd_allocator_wrapper_alloc(
   struct filepath_allocator_wrapper* allocator,
-  size_t bytes);
+  u32 bytes);
 
 void
 libd_allocator_wrapper_reset(struct filepath_allocator_wrapper* allocator);

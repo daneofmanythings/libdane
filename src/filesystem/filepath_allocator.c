@@ -6,7 +6,7 @@ libd_filepath_allocator_create(
   u8 alignment)
 {
   enum libd_result r =
-    libd_allocator_wrapper_create(&out_ta->wrapper, 8192, alignment);
+    libd_allocator_wrapper_create(&out_ta->wrapper, 8 * KiB, KiB, alignment);
   if (r != libd_ok) {
     return libd_no_memory;
   }

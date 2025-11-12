@@ -18,6 +18,7 @@
 
 /**
  * @brief Opaque handle for the linear allocator.
+ * @note The allocator's data region is aligned to 16 bytes.
  */
 typedef struct linear_allocator libd_linear_allocator_h;
 
@@ -44,9 +45,10 @@ typedef struct pool_allocator libd_pool_allocator_h;
  */
 enum libd_result
 libd_linear_allocator_create(
-  libd_linear_allocator_h** out_allocator,
-  size_t capacity_bytes,
-  uint8_t alignment);
+  struct linear_allocator** out_allocator,
+  u32 max_vas_range_bytes,
+  u32 starting_capacity_bytes,
+  u8 alignment);
 
 /**
  * @brief Destroys the allocator.
@@ -67,7 +69,7 @@ enum libd_result
 libd_linear_allocator_alloc(
   libd_linear_allocator_h* p_allocator,
   void** out_pointer,
-  size_t size_bytes);
+  u32 size_bytes);
 
 /**
  * @brief Sets a savepoint which can be restored to.

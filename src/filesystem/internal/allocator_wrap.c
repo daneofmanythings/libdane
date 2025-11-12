@@ -5,11 +5,12 @@
 enum libd_result
 libd_allocator_wrapper_create(
   struct filepath_allocator_wrapper* allocator,
-  size_t size,
+  u32 reserve,
+  u32 size,
   uint8_t alignment)
 {
   enum libd_result r =
-    libd_linear_allocator_create(&allocator->a, size, alignment);
+    libd_linear_allocator_create(&allocator->a, reserve, size, alignment);
   if (r != libd_ok) {
     return r;
   }
@@ -20,7 +21,7 @@ libd_allocator_wrapper_create(
 void*
 libd_allocator_wrapper_alloc(
   struct filepath_allocator_wrapper* allocator,
-  size_t bytes)
+  u32 bytes)
 {
   void* out_ptr;
   enum libd_result r =

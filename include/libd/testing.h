@@ -32,6 +32,8 @@
   #endif
 #endif
 
+#define ARR_LEN(arr) (sizeof(arr) / sizeof(arr[0]))
+
 enum libd_test_code {
   libd_test_ok,
   libd_test_fail,

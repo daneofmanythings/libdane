@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 /**
  * @brief Check whether or not the given offset is a power of 2.
@@ -23,28 +24,24 @@ libd_memory_is_power_of_two(size_t offset)
  * @param alignment Value to verify.
  * @return LIBD_MEM_OK on success, non-zero otherwise.
  */
-enum libd_result
+bool
 libd_memory_is_valid_alignment(uint8_t alignment)
 {
   if (alignment == 0) {
-    return libd_invalid_alignment;
+    return false;
   }
 
   if (!libd_memory_is_power_of_two(alignment) || alignment > LIBD_MAX_ALIGN) {
-    return libd_invalid_alignment;
+    return false;
   }
 
-  return libd_ok;
+  return true;
 }
 
 uintptr_t
 libd_memory_align_value(
   uintptr_t value,
-  uint8_t alignment)
+  uintptr_t alignment)
 {
-  if (libd_memory_is_valid_alignment(alignment) != libd_ok) {
-    return libd_invalid_alignment;
-  }
-
   return ((value + alignment - 1) & ~(uintptr_t)(alignment - 1));
 }

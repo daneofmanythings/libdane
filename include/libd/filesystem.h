@@ -56,13 +56,13 @@ enum libd_filesystem_path_type {
 static inline bool
 libd_filepath_is_abs(enum libd_filesystem_path_type type)
 {
-  return (type & LIBD_FILEPATH_IS_ABS) == LIBD_FILEPATH_IS_ABS;
+  return (type & LIBD_FILEPATH_IS_ABS) != 0;
 }
 
 static inline bool
 libd_filepath_is_dir(enum libd_filesystem_path_type type)
 {
-  return (type & LIBD_FILEPATH_IS_DIR) == LIBD_FILEPATH_IS_DIR;
+  return (type & LIBD_FILEPATH_IS_DIR) != 0;
 }
 
 //==============================================================================
@@ -98,7 +98,7 @@ libd_filesystem_filepath_init(
  * @param rhs_path Path to join with (right hand side).
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filepath_h
+enum libd_result
 libd_filesystem_filepath_join(
   libd_filepath_h* out_path,
   const libd_filepath_h* lhs_path,
@@ -110,7 +110,7 @@ libd_filesystem_filepath_join(
  * @param rhs_path Path to append.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filepath_h
+enum libd_result
 libd_filesystem_filepath_append(
   libd_filepath_h* lhs_path,
   const libd_filepath_h* rhs_path);
@@ -123,7 +123,7 @@ libd_filesystem_filepath_append(
  * @param n How many ancestors up to walk.
  * return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filepath_h
+enum libd_result
 libd_filesystem_filepath_ancestor(
   libd_filepath_h* out_path,
   const libd_filepath_h* start_path,
@@ -139,7 +139,7 @@ libd_filesystem_filepath_ancestor(
  * @param child_path The potential child/descendant path to check.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filepath_h
+enum libd_result
 libd_filesystem_filepath_is_subpath_of(
   bool* out_is_subpath,
   const libd_filepath_h* parent_path,
@@ -154,7 +154,7 @@ libd_filesystem_filepath_is_subpath_of(
  * @param path2 Second path to compare.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filepath_h
+enum libd_result
 libd_filesystem_filepath_is_equal(
   bool* out_is_equal,
   const libd_filepath_h* left_path,
@@ -167,7 +167,7 @@ libd_filesystem_filepath_is_equal(
  * @param filename_path Path object to extract the filename from.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
-libd_filepath_h
+enum libd_result
 libd_filesystem_filepath_filename(
   libd_filepath_h* out_path,
   const libd_filepath_h* filename_path);
@@ -179,7 +179,7 @@ libd_filesystem_filepath_filename(
  */
 enum libd_result
 libd_filesystem_filepath_string(
-  libd_filepath_h* path,
+  const libd_filepath_h* path,
   char* out_string);
 
 // get extension

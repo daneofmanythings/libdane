@@ -190,6 +190,10 @@ libd_filepath_resolver_expand( // FIX: error handling
   struct filepath_resolver* fpr,
   libd_filesystem_env_get_f env_get)
 {
+  if (env_get == NULL) {
+    return libd_ok;
+  }
+
   struct path_token_node* curr_node   = fpr->head;
   struct path_token_node* temp        = NULL;
   struct path_token_node* result_head = NULL;

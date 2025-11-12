@@ -1,110 +1,151 @@
 #include "../../include/libd/memory.h"
 #include "./internal/helpers.h"
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
+// field order matters for 16byte data alignment
 struct linear_allocator {
-  size_t capacity;
-  size_t head_index_bytes;
-  uint8_t alignment;
-  uint8_t* data;
+  size_t curr_data_size;
+  size_t head_index;
+  u8 alignment;
+  u8 header_size;
+  u32 sys_page_size;
+  size_t data_reservation_size;
+  u8 data[];
 };
 
+static inline size_t
+_total_reservation_size(struct linear_allocator* la)
+{
+  return libd_memory_align_value(
+    la->header_size + la->data_reservation_size, la->sys_page_size);
+}
+
 struct linear_allocator_savepoint {
-  size_t index_bytes;
+  u32 data_index;
 };
 
 enum libd_result
 libd_linear_allocator_create(
-  struct linear_allocator** out_allocator,
-  size_t capacity_bytes,
-  uint8_t alignment)
+  struct linear_allocator** out_la,
+  u32 data_reservation_size,
+  u32 starting_capacity,
+  u8 alignment)
 {
-  if (out_allocator == NULL || capacity_bytes == 0) {
+  if (out_la == NULL || starting_capacity == 0) {
     return libd_invalid_parameter;
   }
 
-  enum libd_result result = libd_memory_is_valid_alignment(alignment);
-  if (result != libd_ok) {
-    return result;
+  if (!libd_memory_is_valid_alignment(alignment)) {
+    return libd_invalid_alignment;
   }
 
-  size_t allocation_size =
-    sizeof(struct linear_allocator) + capacity_bytes + alignment - 1;
-  allocation_size = libd_memory_align_value(allocation_size, alignment);
+  u8 header_size = sizeof(struct linear_allocator);
 
-  struct linear_allocator* p_allocator = malloc(allocation_size);
-  if (p_allocator == NULL) {
-    return libd_no_memory;
+  s64 page_size = sysconf(_SC_PAGE_SIZE);
+  if (page_size == -1) {
+    // TODO: unable to get page size from system
+  }
+  size_t total_reservation_size =
+    libd_memory_align_value(header_size + data_reservation_size, page_size);
+
+  struct linear_allocator* la = mmap(
+    NULL,
+    total_reservation_size,
+    PROT_NONE,
+    MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE,
+    -1,
+    0);
+  if (la == MAP_FAILED) {
+    // TODO:
   }
 
-  p_allocator->capacity         = capacity_bytes;
-  p_allocator->head_index_bytes = 0;
-  p_allocator->alignment        = alignment;
+  size_t curr_data_size = libd_memory_align_value(starting_capacity, page_size);
+  size_t curr_total_size =
+    libd_memory_align_value(header_size + curr_data_size, page_size);
 
-  // setting the start of the data region to the given alignment.
-  uintptr_t aligned_data_start = libd_memory_align_value(
-    (uintptr_t)p_allocator + sizeof(struct linear_allocator), alignment);
-  p_allocator->data = (uint8_t*)aligned_data_start;
+  if (mprotect(la, curr_total_size, PROT_READ | PROT_WRITE) != 0) {
+    // TODO:
+  }
 
-  *out_allocator = p_allocator;
+  la->curr_data_size        = curr_data_size;
+  la->head_index            = 0;
+  la->alignment             = alignment;
+  la->data_reservation_size = data_reservation_size;
+  la->sys_page_size         = page_size;
+  la->header_size           = header_size;
+
+  *out_la = la;
 
   return libd_ok;
 }
 
 enum libd_result
-libd_linear_allocator_destroy(struct linear_allocator* p_allocator)
+libd_linear_allocator_destroy(struct linear_allocator* la)
 {
-  if (p_allocator == NULL) {
+  if (la == NULL) {
     return libd_invalid_parameter;
   }
 
-  free(p_allocator);
+  if (munmap(la, _total_reservation_size(la)) != 0) {
+    // TODO:
+  }
 
   return libd_ok;
 }
 
 enum libd_result
 libd_linear_allocator_alloc(
-  struct linear_allocator* p_allocator,
-  void** out_pointer,
-  size_t size)
+  struct linear_allocator* la,
+  void** out_ptr,
+  u32 size)
 {
-  if (p_allocator == NULL || out_pointer == NULL) {
+  if (la == NULL || out_ptr == NULL) {
     return libd_invalid_parameter;
   }
 
-  if (p_allocator->capacity < p_allocator->head_index_bytes + size) {
-    return libd_no_memory;
+  if (la->curr_data_size < la->head_index + size) {
+    if (la->data_reservation_size < la->head_index + size) {
+      return libd_no_memory;
+    }
+    // Round to next multiple of data_size * 2 to amortize future large
+    // allocations
+    size_t new_data_size =
+      libd_memory_align_value(la->head_index + size, la->curr_data_size * 2);
+
+    // Ensure total allocation (header + data) is page-aligned for mprotect
+    size_t new_total_size = libd_memory_align_value(
+      la->header_size + new_data_size, la->sys_page_size);
+
+    new_total_size = MIN(new_total_size, _total_reservation_size(la));
+
+    if (mprotect(la, new_total_size, PROT_READ | PROT_WRITE) != 0) {
+      // TODO:
+    }
+    la->curr_data_size = new_total_size - la->header_size;
   }
 
-  // This state should not be possible.
-  size_t aligned_index = libd_memory_align_value(
-    p_allocator->head_index_bytes, p_allocator->alignment);
-  if (aligned_index != p_allocator->head_index_bytes) {
-    return libd_invalid_alignment;
-  }
-  // -----
-
-  *out_pointer = &p_allocator->data[p_allocator->head_index_bytes];
-  p_allocator->head_index_bytes +=
-    libd_memory_align_value(size, p_allocator->alignment);
+  *out_ptr = &la->data[la->head_index];
+  la->head_index += libd_memory_align_value(size, la->alignment);
 
   return libd_ok;
 }
 
 enum libd_result
 libd_linear_allocator_set_savepoint(
-  const struct linear_allocator* p_allocator,
-  struct linear_allocator_savepoint* out_savepoint)
+  const struct linear_allocator* la,
+  struct linear_allocator_savepoint* out_sp)
 {
-  if (p_allocator == NULL || out_savepoint == NULL) {
+  if (la == NULL || out_sp == NULL) {
     return libd_invalid_parameter;
   }
 
-  *out_savepoint = (struct linear_allocator_savepoint){
-    .index_bytes = p_allocator->head_index_bytes,
+  *out_sp = (struct linear_allocator_savepoint){
+    .data_index = la->head_index,
   };
 
   return libd_ok;
@@ -112,40 +153,40 @@ libd_linear_allocator_set_savepoint(
 
 enum libd_result
 libd_linear_allocator_restore_savepoint(
-  struct linear_allocator* p_allocator,
-  const struct linear_allocator_savepoint* p_savepoint)
+  struct linear_allocator* la,
+  const struct linear_allocator_savepoint* sp)
 {
-  if (p_allocator == NULL || p_savepoint == NULL) {
+  if (la == NULL || sp == NULL) {
     return libd_invalid_parameter;
   }
 
-  p_allocator->head_index_bytes = p_savepoint->index_bytes;
+  la->head_index = sp->data_index;
 
   return libd_ok;
 }
 
 enum libd_result
-libd_linear_allocator_reset(struct linear_allocator* p_allocator)
+libd_linear_allocator_reset(struct linear_allocator* la)
 {
-  if (p_allocator == NULL) {
+  if (la == NULL) {
     return libd_invalid_parameter;
   }
 
-  p_allocator->head_index_bytes = 0;
+  la->head_index = 0;
 
   return libd_ok;
 }
 
 enum libd_result
 libd_linear_allocator_bytes_free(
-  libd_linear_allocator_h* p_allocator,
+  struct linear_allocator* la,
   size_t* out_size_bytes)
 {
-  if (p_allocator == NULL) {
+  if (la == NULL || out_size_bytes == NULL) {
     return libd_invalid_parameter;
   }
 
-  *out_size_bytes = p_allocator->capacity - p_allocator->head_index_bytes;
+  *out_size_bytes = la->curr_data_size - la->head_index;
 
   return libd_ok;
 }

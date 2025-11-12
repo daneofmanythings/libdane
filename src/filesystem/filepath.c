@@ -35,11 +35,9 @@ libd_filesystem_filepath_init(
     goto cleanup;
   }
 
-  if (env_getter != NULL) {
-    r = libd_filepath_resolver_expand(fpr, env_getter);
-    if (r != 0) {
-      goto cleanup;
-    }
+  r = libd_filepath_resolver_expand(fpr, env_getter);
+  if (r != 0) {
+    goto cleanup;
   }
 
   r = libd_filepath_resolver_normalize(fpr);
@@ -65,7 +63,7 @@ cleanup:
 
 enum libd_result
 libd_filesystem_filepath_string(
-  struct filepath* fp,
+  const struct filepath* fp,
   char* out_string)
 {
   char* writer = out_string;
@@ -81,6 +79,25 @@ libd_filesystem_filepath_string(
     strcpy(writer, fp->values[i]);
     writer += strlen(fp->values[i]);
     i += 1;
+  }
+
+  return libd_ok;
+}
+
+enum libd_result
+libd_filesystem_filepath_join(
+  struct filepath* out_path,
+  const struct filepath* lhs_path,
+  const struct filepath* rhs_path)
+{
+  // dump both strings into a buffer, then init off of that buffer into the
+  // outpath.
+  enum libd_result r = libd_ok;
+  char temp[512]     = { 0 };
+
+  r = libd_filesystem_filepath_string(lhs_path, temp);
+  if (r != libd_ok) {
+    return r;
   }
 
   return libd_ok;

@@ -18,7 +18,7 @@ libd_memory_is_power_of_two(size_t offset);
  * @param alignment Value to verify.
  * @return LIBD_MEM_OK on success, non-zero otherwise.
  */
-enum libd_result
+bool
 libd_memory_is_valid_alignment(uint8_t alignment);
 
 /**
@@ -31,4 +31,4 @@ libd_memory_is_valid_alignment(uint8_t alignment);
 uintptr_t
 libd_memory_align_value(
   uintptr_t value,
-  uint8_t alignment);
+  uintptr_t alignment);

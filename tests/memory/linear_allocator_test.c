@@ -5,96 +5,91 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 
 static const size_t DEFAULT_CAPACITY = 128;
 
-struct create_inputs {
-  size_t capacity;
-  uint8_t alignment;
-};
-
 static libd_linear_allocator_h*
 helper_create_linear_allocator(
-  size_t capacity,
+  u32 reserve,
+  u32 capacity,
   uint8_t alignment)
 {
   libd_linear_allocator_h* allocator;
-  ASSERT_OK(libd_linear_allocator_create(&allocator, capacity, alignment));
+  ASSERT_OK(
+    libd_linear_allocator_create(&allocator, reserve, capacity, alignment));
 
   return allocator;
 }
 
-struct linear_allocator_create_param {
-  char* name;
-  struct create_inputs inputs;
-  enum libd_result expected;
-};
-
 TEST(linear_allocator_invalid_params)
 {
-  struct linear_allocator_create_param test_cases[] = {
+  struct {
+    char* name;
+    u32 input_reserve;
+    u32 input_capacity;
+    u8 input_alignment;
+    enum libd_result expected;
+  } tcs[] = {
     {
-      .name = "valid\0",
-      .inputs = {
-        16, 2,
-      },
-      .expected = libd_ok,
+      .name            = "valid\0",
+      .input_reserve   = 4 * KiB,
+      .input_capacity  = 16,
+      .input_alignment = 2,
+      .expected        = libd_ok,
     },
     {
-      .name = "zero capacity\0",
-      .inputs = {
-        0, 2,
-      },
-      .expected = libd_invalid_parameter,
+      .name            = "zero capacity\0",
+      .input_reserve   = 4 * KiB,
+      .input_capacity  = 0,
+      .input_alignment = 2,
+      .expected        = libd_invalid_parameter,
     },
     {
-      .name = "zero alignment\0",
-      .inputs = {
-        16, 0,
-      },
-      .expected = libd_invalid_alignment,
+      .name            = "zero alignment\0",
+      .input_reserve   = 4 * KiB,
+      .input_capacity  = 16,
+      .input_alignment = 0,
+      .expected        = libd_invalid_alignment,
     },
     {
-      .name = "non power of 2 alignment\0",
-      .inputs = {
-        16, 3,
-      },
-      .expected = libd_invalid_alignment,
+      .name            = "non power of 2 alignment\0",
+      .input_reserve   = 4 * KiB,
+      .input_capacity  = 16,
+      .input_alignment = 3,
+      .expected        = libd_invalid_alignment,
     },
     {
-      .name = "non power of 2 alignment\0",
-      .inputs = {
-        16, 2 * LIBD_MAX_ALIGN,
-      },
-      .expected = libd_invalid_alignment,
+      .name            = "unsupported alignment\0",
+      .input_reserve   = 4 * KiB,
+      .input_capacity  = 16,
+      .input_alignment = LIBD_MAX_ALIGN * 2,
+      .expected        = libd_invalid_alignment,
     },
   };
 
   // null 'out parameter'
   ASSERT_EQ_U(
-    libd_linear_allocator_create(NULL, 16, 2), libd_invalid_parameter);
+    libd_linear_allocator_create(NULL, 4 * KiB, 16, 2), libd_invalid_parameter);
 
-  size_t num_tests = ARR_LEN(test_cases);
+  size_t num_tests = ARR_LEN(tcs);
   for (size_t i = 0; i < num_tests; i += 1) {
 
     libd_linear_allocator_h* handle = NULL;
 
     ASSERT_EQ_U(
       libd_linear_allocator_create(
-        &handle, test_cases[i].inputs.capacity, test_cases[i].inputs.alignment),
-      test_cases[i].expected);
+        &handle,
+        tcs[i].input_reserve,
+        tcs[i].input_capacity,
+        tcs[i].input_alignment),
+      tcs[i].expected);
 
     if (handle != NULL) {
       ASSERT_OK(libd_linear_allocator_destroy(handle));
     }
   }
 }
-
-struct alloc_param {
-  char* name;
-  struct create_inputs inputs;
-  enum libd_result expected;
-};
 
 TEST(linear_allocator_single_size)
 {
@@ -103,14 +98,16 @@ TEST(linear_allocator_single_size)
     uint16_t bottom;
   };
 
-  const size_t cap        = 32;
+  const u32 reserve       = sysconf(_SC_PAGE_SIZE);
+  const u32 cap           = 32;
   const size_t alloc_size = sizeof(struct hex_hex);
-  const uint8_t align     = 2;
-  const size_t num_loops  = cap / alloc_size;
+  const u8 align          = 2;
+  const size_t num_loops  = reserve / alloc_size;
 
-  libd_linear_allocator_h* la = helper_create_linear_allocator(cap, align);
+  libd_linear_allocator_h* la =
+    helper_create_linear_allocator(cap, reserve, align);
 
-  struct hex_hex hh[64] = { 0 };
+  struct hex_hex hh[4 * KiB] = { 0 };
   for (size_t i = 0; i < num_loops; i++) {
     ASSERT_OK(libd_linear_allocator_alloc(la, (void**)&hh[i], alloc_size));
     hh[i].top    = i;
@@ -135,9 +132,11 @@ TEST(linear_allocator_variable_size_alignment_one)
     char value[];
   };
 
-  const size_t cap            = 32;
-  const uint8_t align         = 1;
-  libd_linear_allocator_h* la = helper_create_linear_allocator(cap, align);
+  const u32 reserve   = KiB;
+  const u32 cap       = 32;
+  const uint8_t align = 1;
+  libd_linear_allocator_h* la =
+    helper_create_linear_allocator(cap, reserve, align);
 
   // 39 non-null chars
   char* values[] = {

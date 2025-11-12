@@ -83,6 +83,10 @@ is_dashes_valid(
 bool
 libd_plaform_filesystem_is_explicit_component_value_valid(const char* value)
 {
+  if (libd_platform_filesystem_is_env_var(value)) {
+    return true;
+  }
+
   if (*value == '.') {
     value += 1;
   }

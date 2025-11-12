@@ -127,7 +127,7 @@ TEST(filepath_resolver_tokenize)
 }
 
 enum libd_result
-filepath_resolver_env_getter(
+test_filepath_resolver_env_getter(
   char* out_val,
   const char* key);
 
@@ -183,7 +183,8 @@ TEST(filepath_resolver_expand)
     fpr  = helper_filepath_resolver_create(tcs[i].input_src, libd_rel_file);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
-    ASSERT_OK(libd_filepath_resolver_expand(fpr, filepath_resolver_env_getter));
+    ASSERT_OK(
+      libd_filepath_resolver_expand(fpr, test_filepath_resolver_env_getter));
 
     test_filepath_resolver_dump_path_string(fpr, test_dest);
     ASSERT_EQ_STR(test_dest, tcs[i].expected_value);
@@ -193,7 +194,7 @@ TEST(filepath_resolver_expand)
 }
 
 enum libd_result
-filepath_resolver_env_getter(
+test_filepath_resolver_env_getter(
   char* out_val,
   const char* key)
 {
@@ -445,7 +446,8 @@ TEST(filepath_resolver_normalize)
     fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
-    ASSERT_OK(libd_filepath_resolver_expand(fpr, filepath_resolver_env_getter));
+    ASSERT_OK(
+      libd_filepath_resolver_expand(fpr, test_filepath_resolver_env_getter));
     ASSERT_EQ_U(
       libd_filepath_resolver_normalize(fpr),
       tcs[i].expected_code,
@@ -468,13 +470,22 @@ TEST(filepath_resolver_dump_to_filepath)
     char* name;
     char* input_src;
     enum libd_filesystem_path_type input_type;
+    libd_filesystem_env_get_f input_env_get;
     const char* expected;
   } tcs[] = {
     {
-      .name       = "first\0",
-      .input_src  = "$three//zero.test\0",
-      .input_type = libd_rel_file,
-      .expected   = "./zero/zero/zero/zero.test\0",
+      .name          = "first\0",
+      .input_src     = "$three//zero.test\0",
+      .input_type    = libd_rel_file,
+      .input_env_get = test_filepath_resolver_env_getter,
+      .expected      = "./zero/zero/zero/zero.test\0",
+    },
+    {
+      .name          = "second\0",
+      .input_src     = "$three//zero.test\0",
+      .input_type    = libd_rel_file,
+      .input_env_get = NULL,
+      .expected      = "./$three/zero.test\0",
     },
   };
 
@@ -487,7 +498,7 @@ TEST(filepath_resolver_dump_to_filepath)
     fpr = helper_filepath_resolver_create(tcs[i].input_src, tcs[i].input_type);
 
     ASSERT_OK(libd_filepath_resolver_tokenize(fpr));
-    ASSERT_OK(libd_filepath_resolver_expand(fpr, filepath_resolver_env_getter));
+    ASSERT_OK(libd_filepath_resolver_expand(fpr, tcs[i].input_env_get));
     ASSERT_OK(libd_filepath_resolver_normalize(fpr));
 
     struct filepath fp = { 0 };
