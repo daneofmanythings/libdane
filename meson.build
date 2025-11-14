@@ -9,6 +9,8 @@ project(
   ],
 )
 
+add_project_arguments('-Wno-variadic-macros', language: 'c')
+
 libd_includedirs = include_directories(
   'include',
 )

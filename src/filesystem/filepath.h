@@ -19,60 +19,11 @@ typedef u8 token_type_e;
 #define IS_SEGMENT_TYPE(type)    CHECK_AGAINST_MASK(type, segment_type)
 #define IS_COMPONENT_TYPE(type)  CHECK_AGAINST_MASK(type, component_mask)
 
-struct path_token_node {
-  struct path_token_node* prev;
-  struct path_token_node* next;
-  token_type_e type;
-  u8 val_len;
-  char value[];
-};
-
 struct filepath_allocator {
   struct filepath_allocator_wrapper wrapper;
   alloc_f alloc;
   reset_f reset;
 };
-
-struct filepath_resolver {
-  const char* src;
-  enum libd_filesystem_path_type path_type;
-  struct path_token_node* head;
-  struct filepath_allocator allocator;
-};
-
-#define FILEPATH_COMPONENT_MAX 15
-struct filepath {
-  token_type_e types[FILEPATH_COMPONENT_MAX];
-  enum libd_filesystem_path_type path_type;
-  char* values[FILEPATH_COMPONENT_MAX];
-  size_t length;
-  struct filepath_allocator allocator;
-};
-
-enum libd_result
-libd_filepath_resolver_create(
-  struct filepath_resolver** out_fpr,
-  const char* src_path,
-  enum libd_filesystem_path_type path_type);
-
-void
-libd_filepath_resolver_destroy(struct filepath_resolver* fpr);
-
-enum libd_result
-libd_filepath_resolver_tokenize(struct filepath_resolver* fpr);
-
-enum libd_result
-libd_filepath_resolver_expand(
-  struct filepath_resolver* fpr,
-  libd_filesystem_env_get_f env_getter);
-
-enum libd_result
-libd_filepath_resolver_normalize(struct filepath_resolver* fpr);
-
-enum libd_result
-libd_filepath_resolver_dump_to_filepath(
-  struct filepath_resolver* fpr,
-  struct filepath* dest);
 
 enum libd_result
 libd_filepath_allocator_create(

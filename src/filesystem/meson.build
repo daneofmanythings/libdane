@@ -3,7 +3,6 @@ filesystem_sources = files(
   'internal/platform_wrap.c',
   'filepath.c',
   'filepath_allocator.c',
-  'filepath_resolver.c',
 )
 
 filesystem_internal_includes = include_directories(

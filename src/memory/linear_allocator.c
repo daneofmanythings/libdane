@@ -31,12 +31,12 @@ struct linear_allocator_savepoint {
 
 enum libd_result
 libd_linear_allocator_create(
-  struct linear_allocator** out_la,
+  struct linear_allocator** out,
   u32 data_reservation_size,
   u32 starting_capacity,
   u8 alignment)
 {
-  if (out_la == NULL || starting_capacity == 0) {
+  if (out == NULL || starting_capacity == 0) {
     return libd_invalid_parameter;
   }
 
@@ -79,7 +79,7 @@ libd_linear_allocator_create(
   la->sys_page_size         = page_size;
   la->header_size           = header_size;
 
-  *out_la = la;
+  *out = la;
 
   return libd_ok;
 }

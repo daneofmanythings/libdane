@@ -62,12 +62,16 @@ TEST(pool_allocator_invalid_params)
     },
   };
 
+  // testing null 'out parameter'
+  ASSERT_EQ_U(
+    libd_pool_allocator_create(NULL, 8, 2, 2), libd_invalid_parameter);
+
   size_t num_tests = ARR_LEN(tcs);
   const char* name;
   for (size_t i = 0; i < num_tests; i += 1) {
-    name = tcs[i].name;
     enum libd_result result;
     libd_pool_allocator_h* pa;
+    name = tcs[i].name;
 
     result = libd_pool_allocator_create(
       &pa,
@@ -79,4 +83,14 @@ TEST(pool_allocator_invalid_params)
 
     libd_pool_allocator_destroy(pa);
   }
+}
+
+TEST(pool_allocator_allocating)
+{
+  struct item {
+    int i;
+  };
+  u32 max_allocations      = 16;
+  u32 bytes_per_allocation = 4;
+  u8 alignment             = LIBD_ALIGNOF(struct item);
 }

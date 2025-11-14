@@ -15,178 +15,141 @@
 // Filesystem types
 //==============================================================================
 
-/**
- * @brief Opaque type for libd_filesystem_path_s. Is used for path operations
- * with a safe, managed abstraction.
- */
-typedef struct filepath libd_filepath_h;
-
-/**
- * @brief Signature for a get env wrapper. Consumer implemented.
- * @param out Out parameter to the memory to store the val.
- * @param key The key for the environment variable.
- * @return result code for the operation.
- */
-typedef enum libd_result (*libd_filesystem_env_get_f)(
-  char* out,
-  const char* key);
-
-/**
- * @brief Possibly frees memory allocated by libd_filesystem_env_get_f.
- * @param var Pointer to the allocated memory.
- */
-typedef void (*libd_filesystem_env_free_f)(const char* var);
-
-/**
- * @brief Used in the initialization of a path object to clarify the type of
- * the path. The state is encoded into the path string during initialization.
- * @note The order of this enum should not change because it allows for bit
- * masking. Bit 0 is rel(0)/abs(1) and bit 1 is file(0)/dir(1).
- */
-enum libd_filesystem_path_type {
-  libd_rel_file      = 0,  // 0b0000
-  libd_abs_file      = 1,  // 0b0001
-  libd_rel_directory = 2,  // 0b0010
-  libd_abs_directory = 3,  // 0b0011
-};
-
-#define LIBD_FILEPATH_IS_ABS 1  // bit 0
-#define LIBD_FILEPATH_IS_DIR 2  // bit 1
-
-static inline bool
-libd_filepath_is_abs(enum libd_filesystem_path_type type)
-{
-  return (type & LIBD_FILEPATH_IS_ABS) != 0;
-}
-
-static inline bool
-libd_filepath_is_dir(enum libd_filesystem_path_type type)
-{
-  return (type & LIBD_FILEPATH_IS_DIR) != 0;
-}
+typedef enum libd_result (*libd_env_getter_f)(
+  char*,
+  const char*);
 
 //==============================================================================
 // Path API
 //==============================================================================
 
 /**
- * @brief Gets the allocation size needed for the opaque handle.
- * @return allocation size in bytes.
- */
-size_t
-libd_filesystem_filepath_get_required_size(void);
-
-/**
- * @brief Normalizes and initialize a raw path into a path object.
- * @param out_path Out parameter for the path object.
- * @param raw_path The input path value.
- * @param type Indicate whether the path ends in a directory or a file.
- * @param env_getter The function used to retrieve environment variables.
- * @return LIBD_PF_FS_OK on success, non-zero otherwise.
+ * @brief Fills the out parameter with a normalized version of the input.
+ * @param out Destination for the resulting path.
+ * @param input Source path to normalize.
+ * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
-libd_filesystem_filepath_init(
-  libd_filepath_h* out_path,
-  const char* raw_path,
-  enum libd_filesystem_path_type type,
-  libd_filesystem_env_get_f env_getter);
+libd_filesystem_filepath_normalize(
+  char* restrict out,
+  size_t out_len,
+  const char* restrict input);
 
 /**
- * @brief Join two paths and initialize into the out parameter.
- * @param out_path Out parameter for the new path.
- * @param lhs_path Path to be joined on (left hand side).
- * @param rhs_path Path to join with (right hand side).
- * @return LIBD_PF_FS_OK on success, non-zero otherwise.
+ * @brief Fills the out parameter with an environment expansion of the given
+ * path using env_getter_f.
+ * @param out Destination for the resulting path.
+ * @param input Source path to expand.
+ * @return libd_ok on success, non-zero otherwise.
+ */
+enum libd_result
+libd_filesystem_filepath_expand(
+  char* restrict out,
+  size_t out_len,
+  const char* restrict input,
+  libd_env_getter_f env_getter_f);
+
+/**
+ * @brief Fills the out parameter with the result of joining two paths then
+ * normalizing the result.
+ * @param out Destination for the resulting path.
+ * @param lhs Path to be joined on (left hand side).
+ * @param rhs Path to join with (right hand side).
+ * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_filesystem_filepath_join(
-  libd_filepath_h* out_path,
-  const libd_filepath_h* lhs_path,
-  const libd_filepath_h* rhs_path);
+  char* restrict out,
+  size_t out_len,
+  const char* lhs,
+  const char* rhs);
 
 /**
- * @brief Join two paths and mutate the lhs path with the result.
- * @param lhs_path Path to be appended to.
- * @param rhs_path Path to append.
- * @return LIBD_PF_FS_OK on success, non-zero otherwise.
- */
-enum libd_result
-libd_filesystem_filepath_append(
-  libd_filepath_h* lhs_path,
-  const libd_filepath_h* rhs_path);
-
-/**
- * @brief Gets the nth ancestor of the given path and initializes a new path
- * through the out parameter.
- * @param out_path Out parameter for the initialized ancestor path.
- * @param start_path Child path from which to get the ancestor.
- * @param n How many ancestors up to walk.
- * return LIBD_PF_FS_OK on success, non-zero otherwise.
+ * @brief Fills the out parameter with the nth ancestor of the given path.
+ * @param out Destination for the ancestor path.
+ * @param input Source for the ancestor calculation.
+ * @param n How many ancestor components up to walk.
+ * return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_filesystem_filepath_ancestor(
-  libd_filepath_h* out_path,
-  const libd_filepath_h* start_path,
+  char* restrict out,
+  size_t out_len,
+  const char* restrict input,
   uint16_t n);
 
 /**
- * @brief Checks if child_path is a subpath of parent_path. The comparison is
+ * @brief Checks if child is a subpath of parent. The comparison is
  * case-insensitive on Windows, case-sensitive on POSIX. A path is a subpath of
  * itself.
- * @param out_is_subpath Out parameter for the result of the comparison. Set to
+ * @param out Out parameter for the result of the comparison. Set to
  * true if child_path is a subpath of parent_path, false otherwise.
- * @param parent_path The potential parent/ancestor path.
- * @param child_path The potential child/descendant path to check.
- * @return LIBD_PF_FS_OK on success, non-zero otherwise.
+ * @param parent The potential parent/ancestor path.
+ * @param child The potential child/descendant path to check.
+ * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_filesystem_filepath_is_subpath_of(
-  bool* out_is_subpath,
-  const libd_filepath_h* parent_path,
-  const libd_filepath_h* child_path);
+  bool* restrict out,
+  size_t out_len,
+  const char* restrict parent,
+  const char* restrict child);
 
 /**
  * @brief Checks if two paths are equal. The comparison is case-insensitive on
  * Windows and case-sensitive on POSIX.
- * @param out_is_equal Out parameter for the result of the comparison. Set to
+ * @param out Out parameter for the result of the comparison. Set to
  * true if paths are equal, false otherwise.
- * @param path1 First path to compare.
- * @param path2 Second path to compare.
- * @return LIBD_PF_FS_OK on success, non-zero otherwise.
+ * @param lhs First path to compare.
+ * @param rhs Second path to compare.
+ * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_filesystem_filepath_is_equal(
-  bool* out_is_equal,
-  const libd_filepath_h* left_path,
-  const libd_filepath_h* right_path);
+  bool* restrict out,
+  size_t out_len,
+  const char* restrict lhs,
+  const char* restrict rhs);
 
 /**
  * @brief Puts the filename into an out parameter if it exists. Will fail if
  * there is no file at the end.
- * @param out_path Path object to hold the filename.
- * @param filename_path Path object to extract the filename from.
+ * @param out Destination to hold the filename.
+ * @param input Source path.
  * @return LIBD_PF_FS_OK on success, non-zero otherwise.
  */
 enum libd_result
 libd_filesystem_filepath_filename(
-  libd_filepath_h* out_path,
-  const libd_filepath_h* filename_path);
+  char* restrict out,
+  size_t out_len,
+  const char* restrict input);
 
 /**
- * @brief Returns a pointer to the internal path string.
- * @param path Path to examine
- * @return pointer to the internal path string.
+ * @brief
  */
 enum libd_result
-libd_filesystem_filepath_string(
-  const libd_filepath_h* path,
-  char* out_string);
+libd_filesystem_filepath_get_extention(
+  char* restrict out,
+  size_t out_len,
+  const char* restrict input);
 
-// get extension
+/**
+ * @brief
+ */
+enum libd_result
+libd_filesystem_filepath_strip_extention(
+  char* restrict out,
+  size_t out_len,
+  const char* restrict input);
 
-// strip extension
-
-// has extension
+/**
+ * @brief
+ */
+enum libd_result
+libd_filesystem_filepath_has_extention(
+  bool* restrict out,
+  size_t out_len,
+  const char* restrict input);
 
 //==============================================================================
 // Directory Management API

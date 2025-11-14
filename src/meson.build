@@ -20,6 +20,10 @@ libd = library(
     libd_includedirs,
     internal_includes,
   ],
+  c_args: [
+    '-Wno-variadic-macros',
+    '-g',
+  ],
   install: true,
   version: meson.project_version(),
   soversion: '0',

@@ -1,104 +1,127 @@
-#include "filepath.h"
-
+#include "../../include/libd/common.h"
 #include "../../include/libd/filesystem.h"
 #include "../../include/libd/platform/filesystem.h"
+#include "./internal/platform_wrap.h"
 
-#include <string.h>
+#include <stdbool.h>
 
-size_t
-libd_filesystem_filepath_get_required_size(void)
-{
-  return sizeof(struct filepath);
-}
+static bool
+_found_self_ref(
+  const char* path,
+  usize scan_pos);
+
+static bool
+_found_parent_ref(
+  const char* path,
+  usize scan_pos);
 
 enum libd_result
-libd_filesystem_filepath_init(
-  struct filepath* fp,
-  const char* raw_path,
-  enum libd_filesystem_path_type type,
-  libd_filesystem_env_get_f env_getter)
+libd_filesystem_filepath_normalize(
+  char* out_path,
+  size_t out_len,
+  const char* input_path)
 {
-  if (fp == NULL || raw_path == NULL || raw_path[0] == NULL_TERMINATOR) {
+  if (
+    out_path == NULL || out_len == 0 || input_path == NULL ||
+    *input_path == NULL_TERMINATOR)
     return libd_invalid_parameter;
-  }
 
-  enum libd_result r;
-  struct filepath_resolver* fpr;
+  size_t prefix_len = platform_filepath_prefix_len(input_path);
 
-  r = libd_filepath_resolver_create(&fpr, raw_path, type);
-  if (r != 0) {
-    return r;
-  }
+  size_t write_pos = 0;
+  size_t scan_pos  = 0;
 
-  r = libd_filepath_resolver_tokenize(fpr);
-  if (r != 0) {
-    goto cleanup;
-  }
-
-  r = libd_filepath_resolver_expand(fpr, env_getter);
-  if (r != 0) {
-    goto cleanup;
-  }
-
-  r = libd_filepath_resolver_normalize(fpr);
-  if (r != 0) {
-    goto cleanup;
-  }
-
-  r = libd_filepath_allocator_create(&fp->allocator, 1);
-  if (r != 0) {
-    goto cleanup;
-  }
-  fp->length = 0;
-
-  r = libd_filepath_resolver_dump_to_filepath(fpr, fp);
-  if (r != 0) {
-    goto cleanup;
-  }
-
-cleanup:
-  libd_filepath_resolver_destroy(fpr);
-  return r;
-}
-
-enum libd_result
-libd_filesystem_filepath_string(
-  const struct filepath* fp,
-  char* out_string)
-{
-  char* writer = out_string;
-  if (!libd_filepath_is_abs(fp->path_type)) {
-    *writer++ = '.';
-    *writer++ = PATH_SEPARATOR;
-  }
-  u8 i = 0;
-  while (!IS_EOF_TYPE(fp->types[i])) {
-    if (i >= FILEPATH_COMPONENT_MAX) {
-      return libd_err;  // FIX: this is not expressive
+  while (scan_pos < prefix_len) {
+    while (input_path[scan_pos + 1] == PATH_SEPARATOR) {
+      scan_pos += 1;
     }
-    strcpy(writer, fp->values[i]);
-    writer += strlen(fp->values[i]);
-    i += 1;
+    out_path[write_pos++] = input_path[scan_pos++];
   }
 
+  while (input_path[scan_pos] != NULL_TERMINATOR) {
+    switch (input_path[scan_pos]) {
+    case PATH_SEPARATOR:
+      while (input_path[scan_pos + 1] == PATH_SEPARATOR) {
+        scan_pos += 1;
+      }
+      break;
+    case '.':
+      if (_found_self_ref(input_path, scan_pos)) {
+        scan_pos += 2;
+        continue;
+      } else if (_found_parent_ref(input_path, scan_pos)) {
+        if (write_pos == prefix_len) {
+          return libd_invalid_path;
+        }
+        write_pos -= 1;
+        while (out_path[write_pos - 1] != PATH_SEPARATOR && write_pos > 0) {
+          write_pos -= 1;
+        }
+        scan_pos += 3;
+        continue;
+      }
+      break;
+    default:
+      break;
+    }
+
+    out_path[write_pos++] = input_path[scan_pos++];
+
+    if (write_pos >= out_len) {
+      return libd_err;
+    }
+  }
+
+  out_path[write_pos] = NULL_TERMINATOR;
+
   return libd_ok;
+}
+
+static bool
+_found_self_ref(
+  const char* path,
+  usize scan_pos)
+{
+  bool behind_satisfied = scan_pos == 0 || path[scan_pos - 1] == PATH_SEPARATOR;
+  bool ahead_satisfied  = path[scan_pos + 1] == PATH_SEPARATOR;
+
+  return behind_satisfied && ahead_satisfied;
+}
+
+static bool
+_found_parent_ref(
+  const char* path,
+  usize scan_pos)
+{
+  if (path[scan_pos + 1] == NULL_TERMINATOR)
+    return false;
+
+  bool behind_satisfied = scan_pos == 0 || path[scan_pos - 1] == PATH_SEPARATOR;
+  bool ahead_one_satisfied = path[scan_pos + 1] == '.';
+  bool ahead_two_satisfied = path[scan_pos + 2] == PATH_SEPARATOR;
+
+  return behind_satisfied && ahead_one_satisfied && ahead_two_satisfied;
 }
 
 enum libd_result
-libd_filesystem_filepath_join(
-  struct filepath* out_path,
-  const struct filepath* lhs_path,
-  const struct filepath* rhs_path)
+libd_filesystem_filepath_expand(
+  char* out_path,
+  size_t out_len,
+  const char* input_path,
+  libd_env_getter_f env_getter)
 {
-  // dump both strings into a buffer, then init off of that buffer into the
-  // outpath.
-  enum libd_result r = libd_ok;
-  char temp[512]     = { 0 };
-
-  r = libd_filesystem_filepath_string(lhs_path, temp);
-  if (r != libd_ok) {
-    return r;
-  }
-
-  return libd_ok;
+  //
 }
+
+enum libd_result
+libd_filesystem_filepath_ancestor(
+  char* out_path,
+  size_t out_len,
+  const char* start_path,
+  uint16_t n);
+
+// get extension
+
+// strip extension
+
+// has extension

@@ -5,16 +5,7 @@
 
 #include <stdbool.h>
 
-bool
-platform_is_env_var(const char* key);
-
-enum libd_result
-platform_env_var_get(
-  char* env_val,
-  const char* env_key,
-  libd_filesystem_env_get_f env_getter);
-
-bool
-plaform_is_component_value_valid(const char* value);
+usize
+platform_filepath_prefix_len(const char* out_path);
 
 #endif  // FILESYSTEM_PATH_PLATFORM_WRAP_H

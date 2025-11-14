@@ -58,23 +58,7 @@
 // Path utilities
 //==============================================================================
 
-/**
- * @brief Determines whether or not a given string format represents an
- * environment variable interpolation.
- * @param key The string to evaluate.
- */
-bool
-libd_platform_filesystem_is_env_var(const char* key);
-
-enum libd_result
-libd_platform_filesystem_env_var_get(
-  char* out_pointer,
-  const char* key,
-  enum libd_result (*env_getter)(
-    char*,
-    const char*));
-
-bool
-libd_plaform_filesystem_is_explicit_component_value_valid(const char* value);
+usize
+libd_platform_filesystem_filepath_prefix_len(const char* out_path);
 
 #endif  // LIBD_PLATFORM_FILESYSTEM_H

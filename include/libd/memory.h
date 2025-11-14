@@ -38,28 +38,33 @@ typedef struct pool_allocator libd_pool_allocator_h;
 
 /**
  * @brief Creates a linear allocator.
- * @param out_allocator Out parameter for the allocator.
- * @param capacity_bytes Capacity for the arena in bytes.
- * @param alignment Alignment value for the allocator. Must be a power of 2.
+ * @param out Out parameter for the allocator.
+ * @param reservation_size_bytes The amount of virtual address space to reserve
+ * for the allocator.
+ * @param starting_capacity_bytes Amount of bytes to initialize. Rounds to page
+ * boundaries.
+ * @param alignment Alignment value for the allocator. Must be a non-zer power
+ * of 2.
  * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_linear_allocator_create(
-  struct linear_allocator** out_allocator,
-  u32 max_vas_range_bytes,
+  struct linear_allocator** out,
+  u32 reservation_size_bytes,
   u32 starting_capacity_bytes,
   u8 alignment);
 
 /**
  * @brief Destroys the allocator.
- * @param p_allocator Handle for the arena.
+ * @param la Handle for the arena.
  * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
-libd_linear_allocator_destroy(libd_linear_allocator_h* p_allocator);
+libd_linear_allocator_destroy(libd_linear_allocator_h* la);
 
 /**
- * @brief Allocates memory in the arena.
+ * @brief Allocates memory in the arena, returning a void pointer through the
+ * out parameter.
  * @param p_allocator Handle to the arena.
  * @param out_pointer Out parameter for the pointer to the allocation.
  * @param size_bytes Size in bytes for the allocation.
@@ -67,20 +72,20 @@ libd_linear_allocator_destroy(libd_linear_allocator_h* p_allocator);
  */
 enum libd_result
 libd_linear_allocator_alloc(
-  libd_linear_allocator_h* p_allocator,
-  void** out_pointer,
+  libd_linear_allocator_h* la,
+  void** out,
   u32 size_bytes);
 
 /**
  * @brief Sets a savepoint which can be restored to.
- * @param p_allocator Handle to the allocator.
- * @param out_savepoint Out parameter for the savepoint.
+ * @param la Handle to the allocator.
+ * @param out Out parameter for the savepoint.
  * @returns libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_linear_allocator_set_savepoint(
-  const libd_linear_allocator_h* p_allocator,
-  libd_linear_allocator_savepoint_h* out_savepoint);
+  const libd_linear_allocator_h* la,
+  libd_linear_allocator_savepoint_h* out);
 
 /**
  * @brief Restores the allocator state to when the savepoint was created by
@@ -88,33 +93,33 @@ libd_linear_allocator_set_savepoint(
  * @warning Restoring the allocator to a savepoint invalidates all savepoints
  * created after it. Attempting to restore to a savepoint that has been
  * invalidated is undefined behavior.
- * @param p_allocator Handle to the allocator.
- * @param p_savepoint Handle to the savepoint.
+ * @param la Handle to the allocator.
+ * @param sp Handle to the savepoint.
  * @returns libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_linear_allocator_restore_savepoint(
-  libd_linear_allocator_h* p_allocator,
-  const libd_linear_allocator_savepoint_h* p_savepoint);
+  libd_linear_allocator_h* la,
+  const libd_linear_allocator_savepoint_h* sp);
 
 /**
  * @brief Resets the allocator to the default state by freeing all allocations.
- * @param p_allocator Handle to the allocator.
+ * @param la Handle to the allocator.
  * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
-libd_linear_allocator_reset(libd_linear_allocator_h* p_allocator);
+libd_linear_allocator_reset(libd_linear_allocator_h* la);
 
 /**
- * @brief Introspects the remaining number of bytes for allocation.
- * @param p_allocator Handle to the allocator.
- * @param out_size_bytes Out parameter for the remaining number of bytes.
+ * @brief Introspects the number of availible bytes for allocation.
+ * @param la Handle to the allocator.
+ * @param out Out parameter for the remaining number of bytes.
  * @return libd_mem_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_linear_allocator_bytes_free(
-  libd_linear_allocator_h* p_allocator,
-  size_t* out_size_bytes);
+  libd_linear_allocator_h* la,
+  size_t* out);
 
 //==============================================================================
 // Pool Allocator API
@@ -125,45 +130,45 @@ libd_linear_allocator_bytes_free(
  */
 enum libd_result
 libd_pool_allocator_create(
-  libd_pool_allocator_h** out_allocator,
-  uint32_t max_allocations,
-  uint32_t bytes_per_alloc,
-  uint8_t alignment);
+  libd_pool_allocator_h** pa,
+  u32 max_allocations,
+  u32 bytes_per_alloc,
+  u8 alignment);
 
 /**
  * @return libd_ok on success, non-zero otherwise
  */
 enum libd_result
-libd_pool_allocator_destroy(libd_pool_allocator_h* p_allocator);
+libd_pool_allocator_destroy(libd_pool_allocator_h* pa);
 
 /**
  * @brief Allocates memory in a free block.
- * @param p_allocator Handle for the allocator.
- * @param out_pointer Out parameter for the pointer to the allocation.
+ * @param pa Handle for the allocator.
+ * @param out Out parameter for the pointer to the allocation.
  * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_pool_allocator_alloc(
-  libd_pool_allocator_h* p_allocator,
-  void** out_pointer);
+  libd_pool_allocator_h* pa,
+  void** out);
 
 /**
  * @brief Frees the allocation for the given handle.
- * @param p_allocator Handle for the allocator.
- * @param p_to_free Handle for the allocation to free.
+ * @param pa Handle for the allocator.
+ * @param ptr Handle for the allocation to free.
  * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
 libd_pool_allocator_free(
-  libd_pool_allocator_h* p_allocator,
-  void* p_to_free);
+  libd_pool_allocator_h* pa,
+  void* ptr);
 
 /**
  * @brief Resets the pool, freeing all allocations.
- * @param p_allocator Handle for the allocator.
+ * @param pa Handle for the allocator.
  * @return libd_ok on success, non-zero otherwise.
  */
 enum libd_result
-libd_pool_allocator_reset(libd_pool_allocator_h* p_allocator);
+libd_pool_allocator_reset(libd_pool_allocator_h* pa);
 
 #endif  // LIBDANE_MEMORY_H
