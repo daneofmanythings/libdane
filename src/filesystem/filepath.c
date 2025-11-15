@@ -6,19 +6,19 @@
 #include <stdbool.h>
 
 static bool
-_found_self_ref(
+_found_relative_ref(
   const char* path,
-  usize scan_pos);
+  u8* scan_pos);
 
 static bool
 _found_parent_ref(
   const char* path,
-  usize scan_pos);
+  u8* scan_pos);
 
 enum libd_result
 libd_filesystem_filepath_normalize(
   char* out_path,
-  size_t out_len,
+  usize out_len,
   const char* input_path)
 {
   if (
@@ -26,64 +26,75 @@ libd_filesystem_filepath_normalize(
     *input_path == NULL_TERMINATOR)
     return libd_invalid_parameter;
 
-  size_t prefix_len = platform_filepath_prefix_len(input_path);
+  const u8* path_start = platform_filepath_end_of_prefix(input_path);
 
-  size_t write_pos = 0;
-  size_t scan_pos  = 0;
+  u8* write_pos = (u8*)out_path;
+  u8* scan_pos  = (u8*)input_path;
 
-  while (scan_pos < prefix_len) {
-    while (input_path[scan_pos + 1] == PATH_SEPARATOR) {
-      scan_pos += 1;
-    }
-    out_path[write_pos++] = input_path[scan_pos++];
+  u8 offset = 0;
+  while (scan_pos < path_start) {
+    offset = platform_write_char_to(write_pos, scan_pos);
+    write_pos += offset;
+    scan_pos += offset;
   }
 
-  while (input_path[scan_pos] != NULL_TERMINATOR) {
-    switch (input_path[scan_pos]) {
+  const u8* const write_path_start = write_pos;
+
+  while (*scan_pos != NULL_TERMINATOR) {
+    switch (*scan_pos) {
     case PATH_SEPARATOR:
-      while (input_path[scan_pos + 1] == PATH_SEPARATOR) {
+      while (scan_pos[1] == PATH_SEPARATOR) {
         scan_pos += 1;
       }
-      break;
-    case '.':
-      if (_found_self_ref(input_path, scan_pos)) {
+      goto write_char;
+    case DOT:
+      if (_found_relative_ref(input_path, scan_pos)) {
         scan_pos += 2;
         continue;
-      } else if (_found_parent_ref(input_path, scan_pos)) {
-        if (write_pos == prefix_len) {
+      }
+      if (_found_parent_ref(input_path, scan_pos)) {
+        if (
+          PTR_EQ(write_pos, write_path_start) ||
+          PTR_EQ(write_pos - 1, write_path_start)) {
           return libd_invalid_path;
         }
         write_pos -= 1;
-        while (out_path[write_pos - 1] != PATH_SEPARATOR && write_pos > 0) {
+
+        while (write_pos[-1] != PATH_SEPARATOR && write_pos > path_start) {
           write_pos -= 1;
         }
         scan_pos += 3;
         continue;
       }
-      break;
+      goto write_char;
     default:
-      break;
+      goto write_char;
     }
 
-    out_path[write_pos++] = input_path[scan_pos++];
+  write_char:
+    offset = platform_write_char_to(write_pos, scan_pos);
+    write_pos += offset;
+    scan_pos += offset;
 
-    if (write_pos >= out_len) {
+    if (PTR_DIFF(write_pos, out_path) >= out_len) {
       return libd_err;
     }
   }
 
-  out_path[write_pos] = NULL_TERMINATOR;
+  *write_pos = NULL_TERMINATOR;
 
   return libd_ok;
 }
 
 static bool
-_found_self_ref(
+_found_relative_ref(
   const char* path,
-  usize scan_pos)
+  u8* scan_pos)
 {
-  bool behind_satisfied = scan_pos == 0 || path[scan_pos - 1] == PATH_SEPARATOR;
-  bool ahead_satisfied  = path[scan_pos + 1] == PATH_SEPARATOR;
+  bool behind_satisfied =
+    PTR_EQ(scan_pos, path) || scan_pos[-1] == PATH_SEPARATOR;
+  bool ahead_satisfied =
+    scan_pos[1] == PATH_SEPARATOR || scan_pos[1] == NULL_TERMINATOR;
 
   return behind_satisfied && ahead_satisfied;
 }
@@ -91,14 +102,16 @@ _found_self_ref(
 static bool
 _found_parent_ref(
   const char* path,
-  usize scan_pos)
+  u8* scan_pos)
 {
-  if (path[scan_pos + 1] == NULL_TERMINATOR)
+  if (scan_pos[1] == NULL_TERMINATOR)
     return false;
 
-  bool behind_satisfied = scan_pos == 0 || path[scan_pos - 1] == PATH_SEPARATOR;
-  bool ahead_one_satisfied = path[scan_pos + 1] == '.';
-  bool ahead_two_satisfied = path[scan_pos + 2] == PATH_SEPARATOR;
+  bool behind_satisfied =
+    PTR_EQ(scan_pos, path) || scan_pos[-1] == PATH_SEPARATOR;
+  bool ahead_one_satisfied = scan_pos[1] == DOT;
+  bool ahead_two_satisfied =
+    scan_pos[2] == PATH_SEPARATOR || scan_pos[2] == NULL_TERMINATOR;
 
   return behind_satisfied && ahead_one_satisfied && ahead_two_satisfied;
 }
@@ -110,7 +123,14 @@ libd_filesystem_filepath_expand(
   const char* input_path,
   libd_env_getter_f env_getter)
 {
-  //
+  // setup a temp vector.
+  // isolate and verify an environment variable for the platform.
+  // fetch the value.
+  // piece together the new string
+  // repeat until done.
+  // memmove to out_path.
+
+  return libd_ok;
 }
 
 enum libd_result
@@ -118,10 +138,7 @@ libd_filesystem_filepath_ancestor(
   char* out_path,
   size_t out_len,
   const char* start_path,
-  uint16_t n);
-
-// get extension
-
-// strip extension
-
-// has extension
+  uint16_t n)
+{
+  //
+}

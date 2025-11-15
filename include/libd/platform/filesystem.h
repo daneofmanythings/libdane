@@ -58,7 +58,12 @@
 // Path utilities
 //==============================================================================
 
-usize
-libd_platform_filesystem_filepath_prefix_len(const char* out_path);
+const u8*
+libd_platform_filesystem_filepath_end_of_prefix(const char* out_path);
+
+u8
+libd_platform_filesystem_filepath_write_char_encoding_to(
+  u8* dest,
+  const u8* src);
 
 #endif  // LIBD_PLATFORM_FILESYSTEM_H

@@ -7,10 +7,14 @@
 
 #include "../common.h"
 
-enum libd_string_encoding {
+#include <stdbool.h>
+#include <string.h>
+
+enum libd_character_encoding {
   libd_ascii,
   libd_utf8,
   libd_utf16,
+  libd_utf32,
 };
 
 /**
@@ -21,7 +25,7 @@ enum libd_string_encoding {
  * encoding.
  */
 static inline u8
-libd_utf8_char_len(u8 leading_byte)
+libd_utf8_char_len(const u8 leading_byte)
 {
   if ((leading_byte >> 7) == 0b0)
     return 1;
@@ -33,6 +37,29 @@ libd_utf8_char_len(u8 leading_byte)
     return 4;
 
   return 0;
+}
+
+static u8
+libd_utf8_write_char(
+  u8* dest,
+  const u8* src)
+{
+  u8 len = libd_utf8_char_len(*src);
+  memcpy(dest, src, len);
+
+  return len;
+}
+
+static bool
+libd_utf8_is_char_equal_to(
+  const u8* subject,
+  const u8* object)
+{
+  u8 len = libd_utf8_char_len(*subject);
+  if (len == 0) {
+    return false;
+  }
+  return memcmp(subject, object, len) == 0;
 }
 
 #endif  // LIBD_ENCODINGS_H

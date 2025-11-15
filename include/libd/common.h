@@ -52,8 +52,11 @@ typedef size_t usize;
 //=============================================================================
 
 #define NULL_TERMINATOR               '\0'
-#define MIN(a, b)                     (a ? a < b : b)
-#define MAX(a, b)                     (a ? a > b : b)
+#define DOT                           '.'
+#define PTR_EQ(p, q)                  ((uptr)p == (uptr)q)
+#define PTR_DIFF(p, q)                ((uptr)p - (uptr)q)
+#define MIN(a, b)                     (a < b ? a : b)
+#define MAX(a, b)                     (a > b ? a : b)
 #define ARR_LEN(a)                    (sizeof(a) / sizeof(a[0]))
 #define CHECK_AGAINST_MASK(val, mask) (((val) & (mask)) != 0)
 #define KiB                           (1 << 10)
